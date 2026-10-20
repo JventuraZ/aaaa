@@ -38,6 +38,8 @@ internal static class AcabamentoInterfaceEspacial
             var pulso = GameObject.Find("Oraculo_Anatomico_Punho");
             if (pulso != null)
                 EstiloPainel(pulso.transform, sprite, true);
+            // O layout final é sempre o painel compacto com abas; reaplicar esta ferramenta não volta ao anterior.
+            ConfiguracaoPainelCompactoAbas.Aplicar(raiz, pulso);
             Validar(raiz.transform, pulso != null ? pulso.transform : null);
             EditorSceneManager.MarkSceneDirty(cena);
             if (!EditorSceneManager.SaveScene(cena))
@@ -185,8 +187,9 @@ internal static class AcabamentoInterfaceEspacial
         var exibicao = painel.Find("DisplayName") as RectTransform;
         var divisao = painel.Find("Division") as RectTransform;
         var descricao = (painel.Find("Description") ?? painel.Find("DescriptionViewport/Description")) as RectTransform;
-        ConfigurarInformacaoLinha(exibicao, new Vector2(0.04f, 0.64f), new Vector2(0.96f, 1f));
-        ConfigurarInformacaoLinha(divisao, new Vector2(0.04f, 0.39f), new Vector2(0.96f, 0.64f));
+        // Categoria e classificação ocupam uma linha cada; a descrição rolável fica com a maior parte da altura.
+        ConfigurarInformacaoLinha(exibicao, new Vector2(0.04f, 0.85f), new Vector2(0.96f, 1f));
+        ConfigurarInformacaoLinha(divisao, new Vector2(0.04f, 0.70f), new Vector2(0.96f, 0.85f));
         DefinirTextoLegivel(exibicao, 18, FontStyle.Bold);
         DefinirTextoLegivel(divisao, 18, FontStyle.Normal);
         GarantirDescricaoRolagem(painel, descricao);
@@ -213,12 +216,12 @@ internal static class AcabamentoInterfaceEspacial
         if (painel == null)
             return;
         var titulo = painel.Find("NavigationTitle") as RectTransform;
-        ConfigurarInformacaoLinha(titulo, new Vector2(0.04f, 0.72f), new Vector2(0.96f, 0.98f));
+        ConfigurarInformacaoLinha(titulo, new Vector2(0.04f, 0.86f), new Vector2(0.96f, 0.98f));
         DefinirTextoLegivel(titulo, 18, FontStyle.Bold);
         var areaVisivel = painel.Find("Viewport") as RectTransform;
         if (areaVisivel != null)
         {
-            ConfigurarInformacaoLinha(areaVisivel, new Vector2(0.04f, 0.04f), new Vector2(0.96f, 0.70f));
+            ConfigurarInformacaoLinha(areaVisivel, new Vector2(0.04f, 0.03f), new Vector2(0.96f, 0.84f));
             var rolagem = painel.GetComponent<ScrollRect>();
             if (rolagem != null)
             {
@@ -256,7 +259,7 @@ internal static class AcabamentoInterfaceEspacial
         areaVisivelImagem.color = new Color(0f, 0f, 0f, 0f);
         areaVisivelImagem.raycastTarget = true;
         Undo.RecordObject(areaVisivelMascara, "Keep scientific description viewport clipped");
-        ConfigurarInformacaoLinha(areaVisivel, new Vector2(0.04f, 0.02f), new Vector2(0.96f, 0.37f));
+        ConfigurarInformacaoLinha(areaVisivel, new Vector2(0.04f, 0.02f), new Vector2(0.96f, 0.68f));
         if (descricao.parent != areaVisivel)
         {
             Undo.SetTransformParent(descricao, areaVisivel, "Posicionar a descrição científica na área de rolagem");
@@ -345,7 +348,8 @@ internal static class AcabamentoInterfaceEspacial
         cores.normalColor = Color.white;
         cores.highlightedColor = new Color(0.82f, 0.86f, 0.90f, 1f);
         cores.pressedColor = new Color(0.66f, 0.72f, 0.79f, 1f);
-        cores.disabledColor = new Color(0.65f, 0.67f, 0.70f, 0.65f);
+        // Inativo fica translúcido; um cinza opaco sobre o painel escuro parecia a ação principal.
+        cores.disabledColor = VRSNC.Interface.EstiloBotaoInterface.CorDesativado;
         botao.colors = cores;
         var rotulo = botao.gameObject.name;
         var primario = rotulo.IndexOf("Entrar", StringComparison.OrdinalIgnoreCase) >= 0 || rotulo.IndexOf("Isolar", StringComparison.OrdinalIgnoreCase) >= 0 || rotulo.IndexOf("Enter", StringComparison.OrdinalIgnoreCase) >= 0 || rotulo.IndexOf("Isolate", StringComparison.OrdinalIgnoreCase) >= 0;

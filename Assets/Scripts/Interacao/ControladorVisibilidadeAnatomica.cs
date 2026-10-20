@@ -30,10 +30,17 @@ namespace VRSNC.Interacao
         private readonly Dictionary<Renderer, bool> estadosRenderizadoresOriginais = new();
         private readonly Dictionary<Collider, bool> estadosColisoresOriginais = new();
         private readonly Dictionary<GameObject, bool> estadosAtivosOriginais = new();
+        // Estruturas que o usuário ocultou (Ocultar), separadas do que o isolamento esconde temporariamente.
+        private readonly HashSet<NoInteracaoAnatomica> ocultosPeloUsuario = new();
         public bool EhIsolando
         {
             get; private set;
         }
+
+        /// <summary>Avisado depois de qualquer mudança de visibilidade (ocultar, mostrar, isolar ou restaurar).</summary>
+        public event System.Action emVisibilidadeAlterada;
+        public int QuantidadeOcultas => ocultosPeloUsuario.Count;
+        public bool EstaOculto(NoInteracaoAnatomica no) => no != null && ocultosPeloUsuario.Contains(no);
 
         /// <summary>
         /// Resolve a raiz e captura a visibilidade inicial da cena.
@@ -88,6 +95,10 @@ namespace VRSNC.Interacao
         public void ExibirNo(NoInteracaoAnatomica no)
         {
             DefinirNoVisivel(no, true);
+            ocultosPeloUsuario.Remove(no);
+            // Mostrar um grupo não revela as peças dele que continuam ocultas pelo usuário.
+            ReaplicarOcultasPeloUsuario();
+            emVisibilidadeAlterada?.Invoke();
         }
 
         /// <summary>
@@ -95,11 +106,15 @@ namespace VRSNC.Interacao
         /// </summary>
         public void OcultarNo(NoInteracaoAnatomica no)
         {
+            if (no == null)
+                return;
             DefinirNoVisivel(no, false);
+            ocultosPeloUsuario.Add(no);
+            emVisibilidadeAlterada?.Invoke();
         }
 
         /// <summary>
-        /// Alterna visibilidade de um nó; se nenhum nó vier informado, restaura tudo.
+        /// Alterna entre ocultar e mostrar um nó; se nenhum nó vier informado, restaura tudo.
         /// </summary>
         public void AlternarVisibilidadeNo(NoInteracaoAnatomica no)
         {
@@ -109,10 +124,26 @@ namespace VRSNC.Interacao
                 return;
             }
 
-            var renderizador = no.GetComponentInChildren<Renderer>(true);
-            var colisor = no.GetComponentInChildren<Collider>(true);
-            var visivel = renderizador != null ? renderizador.enabled : colisor == null || colisor.enabled;
-            DefinirNoVisivel(no, !visivel);
+            if (EstaOculto(no))
+                ExibirNo(no);
+            else
+                OcultarNo(no);
+        }
+
+        /// <summary>Mostra de novo tudo o que o usuário ocultou, sem mexer no isolamento.</summary>
+        public void MostrarOcultas()
+        {
+            foreach (var no in new List<NoInteracaoAnatomica>(ocultosPeloUsuario))
+                DefinirNoVisivel(no, true);
+            ocultosPeloUsuario.Clear();
+            emVisibilidadeAlterada?.Invoke();
+        }
+
+        /// <summary>Volta a esconder o que o usuário ocultou depois de uma operação que mostra peças em massa.</summary>
+        private void ReaplicarOcultasPeloUsuario()
+        {
+            foreach (var no in ocultosPeloUsuario)
+                DefinirNoVisivel(no, false);
         }
 
         /// <summary>
@@ -145,7 +176,9 @@ namespace VRSNC.Interacao
                 DefinirNoVisivel(filho, devemMostrar);
             }
 
+            ReaplicarOcultasPeloUsuario();
             EhIsolando = true;
+            emVisibilidadeAlterada?.Invoke();
         }
 
         /// <summary>
@@ -169,7 +202,10 @@ namespace VRSNC.Interacao
                 no.gameObject.SetActive(true);
             }
 
+            // Sair do isolamento não desfaz o que o usuário ocultou de propósito.
+            ReaplicarOcultasPeloUsuario();
             EhIsolando = false;
+            emVisibilidadeAlterada?.Invoke();
         }
 
         /// <summary>
@@ -201,7 +237,9 @@ namespace VRSNC.Interacao
                 }
             }
 
+            ocultosPeloUsuario.Clear();
             EhIsolando = false;
+            emVisibilidadeAlterada?.Invoke();
         }
 
         /// <summary>

@@ -349,7 +349,7 @@ namespace VRSNC.Interacao
             // O mapeador dedicado tem prioridade. Se for desativado, o roteador
             // genérico assume os atalhos sem alterar a configuração da cena.
             var mapeador = GetComponent<MapeadorEntradaMetaQuest2>();
-            if (!DeveProcessarAtalhos(habilitarEditorTecladoAlternativas, mapeador != null && mapeador.ProcessaAtalhosDoEditor) || Keyboard.current == null)
+            if (!DeveProcessarAtalhos(habilitarEditorTecladoAlternativas, mapeador != null && mapeador.ProcessaAtalhosDoEditor) || Keyboard.current == null || MapeadorEntradaMetaQuest2.SimuladorXRAtivo)
             {
                 return;
             }

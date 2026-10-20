@@ -198,6 +198,9 @@ namespace VRSNC.Interacao
             ReagruparNivelAtual();
         }
 
+        /// <summary>Avisado quando o usuário explode ou reagrupa o nível atual (botão, controle ou atalho).</summary>
+        public event System.Action emExpansaoAlternada;
+
         /// <summary>
         /// Alterna entre vista explodida e restaurada para o nível atual.
         /// </summary>
@@ -211,6 +214,8 @@ namespace VRSNC.Interacao
             {
                 ExpandirNivelAtual();
             }
+
+            emExpansaoAlternada?.Invoke();
         }
 
         /// <summary>

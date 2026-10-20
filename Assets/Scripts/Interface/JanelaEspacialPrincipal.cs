@@ -233,6 +233,8 @@ namespace VRSNC.Interface
             }
 
             acompanhar?.DefinirAcompanhamentoAtivo(false);
+            // Também pela alça do painel, para o estado Seguir/Fixar continuar coerente com a pose.
+            controlePainel?.DefinirAcoplamento(false);
         }
 
         private int quantidadeFocosMovimento;
@@ -305,7 +307,7 @@ namespace VRSNC.Interface
         {
             if (alcaInferior == null || imagemAlcaInferior == null)
                 return;
-            imagemAlcaInferior.color = foco ? new Color(.36f, .42f, .48f, 1f) : new Color(.52f, .55f, .58f, 1f);
+            imagemAlcaInferior.color = foco ? TemaVRSNC.AlcaEmFoco : TemaVRSNC.Alca;
             alcaInferior.anchorMin = new Vector2(.5f, 0f);
             alcaInferior.anchorMax = new Vector2(.5f, 0f);
             alcaInferior.anchoredPosition = new Vector2(0f, -42f);

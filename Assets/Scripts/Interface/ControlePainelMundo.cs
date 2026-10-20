@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
@@ -26,6 +27,12 @@ namespace VRSNC.Interface
         [SerializeField]
         [UnityEngine.Serialization.FormerlySerializedAs("panelFollow")]
         private AcompanhamentoCameraPainelInterface acompanhamentoPainel;
+        // Botões Seguir e Fixar da barra inferior; o do modo atual fica destacado.
+        [SerializeField]
+        private Button botaoSeguir;
+        [SerializeField]
+        private Button botaoFixar;
+        private bool? ultimoAcompanhamentoIndicado;
         private static int quantidadeAgarresPainelAtivos;
         private static readonly HashSet<ControlePainelMundo> alcasAtivas = new HashSet<ControlePainelMundo>();
         private readonly HashSet<IXRSelectInteractor> selecionandoInteratores = new HashSet<IXRSelectInteractor>();
@@ -53,7 +60,33 @@ namespace VRSNC.Interface
                 }
             }
 
+            foreach (var interator in agarresJanelasFlutuantes)
+            {
+                if (interator != null && interator.transform != null && EhMesmaRaizMao(interator.transform, maoRaiz))
+                    return true;
+            }
+
             return false;
+        }
+
+        // Alças das janelas flutuantes (mapa 2D e traçados do EEG) entram no mesmo controle do painel principal:
+        // enquanto uma mão ou controle segura uma delas, essa mão não move a anatomia.
+        private static readonly HashSet<IXRSelectInteractor> agarresJanelasFlutuantes = new HashSet<IXRSelectInteractor>();
+
+        /// <summary>Registra (ou libera) o interator que segura a alça de uma janela flutuante.</summary>
+        public static void DefinirAgarreJanelaFlutuante(IXRSelectInteractor interator, bool segurando)
+        {
+            if (interator == null)
+                return;
+            if (segurando)
+            {
+                if (agarresJanelasFlutuantes.Add(interator))
+                    quantidadeAgarresPainelAtivos++;
+            }
+            else if (agarresJanelasFlutuantes.Remove(interator))
+            {
+                quantidadeAgarresPainelAtivos = Mathf.Max(0, quantidadeAgarresPainelAtivos - 1);
+            }
         }
 
         public static bool AgarrePainelAtivoPara(IXRInteractor interator)
@@ -71,6 +104,7 @@ namespace VRSNC.Interface
         {
             quantidadeAgarresPainelAtivos = 0;
             alcasAtivas.Clear();
+            agarresJanelasFlutuantes.Clear();
         }
 
         public EstadoPosturaPainel EstadoPostura => estadoPostura;
@@ -81,7 +115,43 @@ namespace VRSNC.Interface
             {
                 acompanhamentoPainel = GetComponent<AcompanhamentoCameraPainelInterface>();
             }
+
+            ResolverBotoesModo();
         }
+
+        /// <summary>
+        /// Destaca Seguir ou Fixar conforme o acompanhamento real do painel. Também reflete mudanças feitas
+        /// por outros componentes, como o agarre e a maximização da janela.
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (acompanhamentoPainel == null || (botaoSeguir == null && botaoFixar == null))
+                return;
+            var seguindo = acompanhamentoPainel.EhAcompanhamentoCamera;
+            if (ultimoAcompanhamentoIndicado == seguindo)
+                return;
+            ultimoAcompanhamentoIndicado = seguindo;
+            MarcarModo(botaoSeguir, seguindo);
+            MarcarModo(botaoFixar, !seguindo);
+        }
+
+        private void ResolverBotoesModo()
+        {
+            if (botaoSeguir == null || botaoFixar == null)
+            {
+                foreach (var botao in GetComponentsInChildren<Button>(true))
+                {
+                    if (botaoSeguir == null && botao.name == "Button_SeguirPainel")
+                        botaoSeguir = botao;
+                    else if (botaoFixar == null && botao.name == "Button_FixarPainel")
+                        botaoFixar = botao;
+                }
+            }
+
+        }
+
+        // O modo em uso (SEGUIR ou FIXAR) fica marcado como a aba aberta.
+        private static void MarcarModo(Button botao, bool ativo) => TemaVRSNC.Marcar(botao, ativo);
 
         private void OnEnable()
         {

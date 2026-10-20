@@ -168,6 +168,11 @@ internal static class VerificacoesRegressaoInterfaceEspacial
         Exigir(maisLongo != null && alternativo != null && maisLongo != alternativo, "dois nos anatomicos reais selecionaveis estao disponiveis para a regressao de rolagem A-para-B", falhas);
         if (maisLongo == null || alternativo == null || maisLongo == alternativo)
             return;
+        // No painel em abas, só a aba visível tem layout: cada rolagem é medida com a sua aba aberta.
+        var abas = principal.GetComponent<AbasPainelAnatomico>();
+        var abaAnterior = abas != null ? abas.AbaAtual : AbasPainelAnatomico.Aba.Ficha;
+        if (abas != null)
+            abas.Mostrar(AbasPainelAnatomico.Aba.Ficha);
         informacao.ExibirNo(maisLongo, maisLongo.NomeExibicao);
         Canvas.ForceUpdateCanvases();
         var descricaoRolagem = EncontrarRolagemDescricao(informacao);
@@ -184,6 +189,8 @@ internal static class VerificacoesRegressaoInterfaceEspacial
             Exigir(Mathf.Approximately(descricaoRolagem.content.anchoredPosition.y, 0f), "um no diferente reinicia a rolagem da descricao no topo", falhas);
         }
 
+        if (abas != null)
+            abas.Mostrar(AbasPainelAnatomico.Aba.Estruturas);
         var navegacaoRolagem = EncontrarRolagemNavegacao(navegacao);
         var focoA = selecao.NoEmFoco ?? selecao.NoRaiz;
         NoInteracaoAnatomica focoB = null;
@@ -211,12 +218,27 @@ internal static class VerificacoesRegressaoInterfaceEspacial
             Canvas.ForceUpdateCanvases();
             var alteradoFocoY = navegacaoRolagem.content.anchoredPosition.y;
             var focoNormalizadoAlterado = navegacaoRolagem.verticalNormalizedPosition;
-            Debug.Log($"[Regressao de rolagem da interface espacial] navegação A.y={testeY2:F1}, A->A.y={mesmoFocoY:F1}, A->B.y={alteradoFocoY:F1}, " + $"A->B.normalized={focoNormalizadoAlterado:F3}, conteúdo={navegacaoRolagem.content.rect.height:F1}, área visível={navegacaoRolagem.viewport.rect.height:F1}, linhas={navegacaoRolagem.content.childCount}.");
-            Exigir(Mathf.Abs(focoNormalizadoAlterado - 1f) <= 0.001f, "um foco diferente reinicia a rolagem da navegacao no topo", falhas);
+            // Uma lista que cabe inteira na área visível não rola: o ScrollRect devolve 0 ou 1 conforme o arredondamento.
+            // Nesse caso, "no topo" é o topo do conteúdo alinhado ao topo da área visível.
+            var areaNavegacao = navegacaoRolagem.viewport != null ? navegacaoRolagem.viewport : (RectTransform)navegacaoRolagem.transform;
+            var listaCabeInteira = navegacaoRolagem.content.rect.height <= areaNavegacao.rect.height + 0.5f;
+            var distanciaTopo = DistanciaDoTopo(navegacaoRolagem.content, areaNavegacao);
+            Debug.Log($"[Regressao de rolagem da interface espacial] navegação A.y={testeY2:F1}, A->A.y={mesmoFocoY:F1}, A->B.y={alteradoFocoY:F1}, " + $"A->B.normalized={focoNormalizadoAlterado:F3}, A->B.distância do topo={distanciaTopo:F1}, conteúdo={navegacaoRolagem.content.rect.height:F1}, área visível={navegacaoRolagem.viewport.rect.height:F1}, linhas={navegacaoRolagem.content.childCount}.");
+            Exigir(listaCabeInteira ? Mathf.Abs(distanciaTopo) <= 0.5f : Mathf.Abs(focoNormalizadoAlterado - 1f) <= 0.001f, "um foco diferente reinicia a rolagem da navegacao no topo", falhas);
             navegacao.Atualizar(selecao.NoEmFoco ?? selecao.NoRaiz);
         }
 
         informacao.ExibirFoco(selecao.NoEmFoco ?? selecao.NoRaiz);
+        if (abas != null)
+            abas.Mostrar(abaAnterior);
+    }
+
+    // Quanto o topo do conteúdo está abaixo do topo da área visível, no espaço da área (0 = encostado no topo).
+    private static float DistanciaDoTopo(RectTransform conteudo, RectTransform area)
+    {
+        var cantos = new Vector3[4];
+        conteudo.GetWorldCorners(cantos);
+        return area.rect.yMax - area.InverseTransformPoint(cantos[1]).y;
     }
 
     private static ScrollRect EncontrarRolagemDescricao(PainelInformacoesAnatomicas informacao)
@@ -232,7 +254,8 @@ internal static class VerificacoesRegressaoInterfaceEspacial
         var contêiner = typeof(PainelNavegacaoAnatomica).GetField("conteinerLista", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(navegacao) as Transform;
         if (contêiner == null)
             return null;
-        var rolagem = contêiner.GetComponentInParent<ScrollRect>();
+        // A lista pode estar na aba oculta: procurar também em objetos inativos.
+        var rolagem = contêiner.GetComponentInParent<ScrollRect>(true);
         if (rolagem != null && rolagem.content == contêiner)
             return rolagem;
         return null;

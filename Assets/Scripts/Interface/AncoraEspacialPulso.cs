@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.XR.Hands;
 using UnityEngine.XR.Interaction.Toolkit.Inputs;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.UI.BodyUI;
 
 namespace VRSNC.Interface
 {
@@ -75,6 +76,26 @@ namespace VRSNC.Interface
         [SerializeField]
         [UnityEngine.Serialization.FormerlySerializedAs("headerGrab")]
         private XRGrabInteractable cabecalhoAgarre;
+        [Header("Visibilidade ao virar o pulso")]
+        // Acoplado, o oráculo só aparece quando o pulso (ou o controle) se volta para o rosto, como um relógio.
+        [SerializeField]
+        private bool mostrarSoAoVirarPulso = true;
+        // Mesma regra do Hand Menu do XRI: o eixo de referência e o ângulo vêm destes presets.
+        [SerializeField]
+        private FollowPresetDatum predefinicaoMao;
+        [SerializeField]
+        private FollowPresetDatum predefinicaoControle;
+        // O pulso também precisa estar perto do centro do olhar.
+        [SerializeField, Range(20f, 90f)]
+        private float anguloOlharPulsoGraus = 50f;
+        [SerializeField, Min(1f)]
+        private float velocidadeTransicao = 8f;
+        [SerializeField]
+        private CanvasGroup grupoConteudo;
+        private bool visivelAoVirarPulso;
+        private float ultimoRequisitoAtendido = float.NegativeInfinity;
+        private ZonaProximidadePainelInterface[] zonasProximidade = new ZonaProximidadePainelInterface[0];
+        public bool EstaVisivel => grupoConteudo == null || grupoConteudo.alpha > 0.5f;
         private static readonly List<XRHandSubsystem> MaoSubsistemas = new();
         private XRHandSubsystem maoSubsistema;
         private float tempoProximaBuscaSubsistemaMao;
@@ -109,6 +130,9 @@ namespace VRSNC.Interface
             DesabilitarLegadoControlador();
             ConectarAgarre();
             RestaurarEstadoAgarre();
+            if (grupoConteudo == null)
+                grupoConteudo = GetComponentInChildren<CanvasGroup>(true);
+            zonasProximidade = GetComponentsInChildren<ZonaProximidadePainelInterface>(true);
         }
 
         private void OnEnable()
@@ -128,6 +152,7 @@ namespace VRSNC.Interface
 
         private void LateUpdate()
         {
+            AtualizarVisibilidade();
             if (estado != EstadoPostura.Acoplado || quantidadeAgarres > 0)
                 return;
             if (!TentarObterRastreadoAcoplarAncora(out var rastreadoAncora, out var ehEsquerda))
@@ -154,6 +179,60 @@ namespace VRSNC.Interface
             var suavizacao = 1f - Mathf.Exp(-suavizacaoAngular * Time.deltaTime);
             var rotacaoSuavizada = Quaternion.Slerp(transform.rotation, rotacaoDesejada, suavizacao);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, rotacaoSuavizada, velocidadeAngularMaxima * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// Aparece e some em fade. Escondido, não recebe cliques, não pode ser agarrado e não bloqueia o raio.
+        /// Agarrado ou solto no mundo, fica sempre visível.
+        /// </summary>
+        private void AtualizarVisibilidade()
+        {
+            if (!Application.isPlaying || grupoConteudo == null)
+                return;
+            var mostrar = !mostrarSoAoVirarPulso || estado != EstadoPostura.Acoplado || quantidadeAgarres > 0 || PulsoVoltadoParaRosto();
+            grupoConteudo.alpha = Mathf.MoveTowards(grupoConteudo.alpha, mostrar ? 1f : 0f, velocidadeTransicao * Time.unscaledDeltaTime);
+            var interativo = grupoConteudo.alpha > 0.5f;
+            if (grupoConteudo.interactable == interativo)
+                return;
+            grupoConteudo.interactable = interativo;
+            grupoConteudo.blocksRaycasts = interativo;
+            if (cabecalhoAgarre != null && quantidadeAgarres == 0)
+                cabecalhoAgarre.enabled = interativo;
+            foreach (var zona in zonasProximidade)
+            {
+                if (zona != null)
+                    zona.enabled = interativo;
+            }
+        }
+
+        private bool PulsoVoltadoParaRosto()
+        {
+            var camera = dispositivoVR != null ? dispositivoVR : Camera.main != null ? Camera.main.transform : null;
+            if (camera == null || !TentarObterRastreadoAcoplarAncora(out var ancora, out var ehEsquerda))
+            {
+                visivelAoVirarPulso = false;
+                return false;
+            }
+
+            var ehMao = ancora == pulsoEsquerdo || ancora == pulsoDireito;
+            var datum = ehMao ? predefinicaoMao : predefinicaoControle;
+            var predefinicao = datum != null ? datum.Value : null;
+            var voltado = true;
+            if (predefinicao != null && predefinicao.requirePalmFacingUser)
+            {
+                predefinicao.ComputeDotProductThresholds();
+                var eixo = predefinicao.GetReferenceAxisForTrackingAnchor(ancora, !ehEsquerda);
+                // Folga para esconder, como no Hand Menu: depois de aparecer, só some quando sai bem do ângulo.
+                var limite = visivelAoVirarPulso ? predefinicao.palmFacingUserDotThreshold - (1f - predefinicao.palmFacingUserHideMenuDotThreshold) : predefinicao.palmFacingUserDotThreshold;
+                voltado = Vector3.Dot(eixo, -camera.forward) > limite;
+            }
+
+            var olhando = Vector3.Angle(camera.forward, ancora.position - camera.position) <= anguloOlharPulsoGraus + (visivelAoVirarPulso ? 10f : 0f);
+            if (voltado && olhando)
+                ultimoRequisitoAtendido = Time.unscaledTime;
+            var atraso = predefinicao != null ? predefinicao.hideDelaySeconds : 0.15f;
+            visivelAoVirarPulso = Time.unscaledTime - ultimoRequisitoAtendido <= atraso;
+            return visivelAoVirarPulso;
         }
 
         public void AcoplarAoPulso()

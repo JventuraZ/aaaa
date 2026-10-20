@@ -1,8 +1,10 @@
+using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using VRSNC.Anatomia;
+using VRSNC.Interface;
 
 namespace VRSNC.Interacao
 {
@@ -11,7 +13,7 @@ namespace VRSNC.Interacao
     // Função: atualiza os textos visíveis do painel com foco, seleção, caminho anatômico e metadados do SNC.
     // Relação com o protótipo: recebe dados do GerenciadorSelecaoHierarquica e mostra ao usuário o que está em foco
     // ou selecionado durante a navegação anatômica por raycast/trigger.
-    // Objetos da cena: usado no Painel_Anatomico_VR_SNC e, quando presente, no Painel_Antigo_SNC.
+    // Objetos da cena: usado no Painel_Anatomico_VR_SNC.
     /// <summary>
     /// Controla os textos e a expansão/recolhimento do painel de anatomia em VR.
     /// A classe só altera conteúdo visual; a seleção anatômica continua sendo controlada pelo gerenciador de seleção.
@@ -196,9 +198,31 @@ namespace VRSNC.Interacao
         }
 
         /// <summary>
-        /// Mostra uma estrutura selecionada, com caminho anatômico, nível e metadados disponíveis.
+        /// Mostra uma estrutura selecionada. O caminho é montado a partir da hierarquia do próprio nó;
+        /// o parâmetro de caminho é mantido por compatibilidade com os chamadores existentes.
         /// </summary>
         public void ExibirNo(NoInteracaoAnatomica no, string caminhoAtual)
+        {
+            Exibir(no, false);
+        }
+
+        /// <summary>
+        /// Mostra o foco atual quando não há estrutura selecionada.
+        /// </summary>
+        public void ExibirFoco(NoInteracaoAnatomica focoNo)
+        {
+            if (focoNo == null)
+            {
+                Limpar();
+                return;
+            }
+
+            // No nível inicial nada foi escolhido ainda: a orientação de uso vem antes da ficha da raiz.
+            Exibir(focoNo, focoNo.NoPai == null);
+            DefinirTexto(textoEstado, textoEstadoAlternativo, "Em foco");
+        }
+
+        private void Exibir(NoInteracaoAnatomica no, bool comOrientacao)
         {
             if (no == null)
             {
@@ -210,51 +234,34 @@ namespace VRSNC.Interacao
             var informacao = no.EstruturaInformacao != null ? no.EstruturaInformacao : no.GetComponent<InformacaoEstruturaAnatomica>();
             var vinculo = no.VinculoAnatomico;
             OraculoAnatomico.TentarObter(vinculo, out var oraculo);
-            var caminho = string.IsNullOrWhiteSpace(caminhoAtual) ? no.NomeExibicao : caminhoAtual.Replace(" / ", " > ");
-            var descricao = oraculo != null ? oraculo.descricaoCientifica : MontarDescricao(no, informacao);
-            descricao = OraculoAnatomico.ObterEstadoVerificacao(oraculo) + "\n\n" + descricao;
-            var divisao = informacao != null ? $"Divisão: {NoInteracaoAnatomica.ConverterParaNomeExibidoEmPortugues(informacao.DivisaoPrincipal.ToString())}\nSubdivisão: {NoInteracaoAnatomica.ConverterParaNomeExibidoEmPortugues(informacao.Subdivisao.ToString())}" : $"Grupo: {no.NomeExibicao}\nRepresentações: {ContarRepresentacoesGrupo(no)}";
-            // O nome em português selecionado é o cabeçalho visual. Mantém categoria/caminho como
-            // metadados secundários em vez de repetir o mesmo nome em cada linha de texto.
-            var cabecalho = oraculo != null && !string.IsNullOrWhiteSpace(oraculo.nomePortugues) ? oraculo.nomePortugues : no.NomeExibicao;
-            DefinirTexto(textoTitulo, textoTituloAlternativo, cabecalho);
-            DefinirTexto(textoEstado, textoEstadoAlternativo, vinculo != null && vinculo.EhGrupo ? "Categoria: grupo anatômico" : "Categoria: estrutura anatômica");
-            DefinirTexto(textoCaminho, textoCaminhoAlternativo, $"Caminho: {caminho}");
-            // O cabeçalho em português já carrega esta identidade. Inglês/latim permanecem
-            // na linha dedicada de identidade abaixo, sem uma pilha de rótulos duplicada.
-            DefinirTexto(textoNomeNo, textoNomeNoAlternativo, string.Empty);
-            var identidade = vinculo != null && !vinculo.EhGrupo ? $"Código: {vinculo.ConceitoId}\nNome de origem (inglês): {vinculo.NomeCientificoExibido}" : $"Grupo anatômico: {no.NomeExibicao}";
-            if (oraculo != null)
+            var ehGrupo = vinculo != null ? vinculo.EhGrupo : informacao == null;
+            var caminho = MontarCaminhoCurto(no);
+            var categoria = MontarCategoria(no, ehGrupo);
+            var classificacao = MontarClassificacao(no, informacao);
+            // O conteúdo didático vem primeiro; verificação, códigos e nomes de origem ficam no fim.
+            // No painel compacto a linha própria da classificação fica oculta: ela passa para a linha discreta da ficha.
+            var descricao = MontarConteudo(no, informacao, oraculo, ClassificacaoTemLinhaPropria ? string.Empty : classificacao);
+            if (comOrientacao)
             {
-                var codigo = string.IsNullOrWhiteSpace(oraculo.idFma) ? "Grupo anatômico" : $"{oraculo.idArquivo} | {oraculo.idFma}";
-                identidade = $"{codigo}\n{oraculo.nomeIngles}";
-                if (!string.IsNullOrWhiteSpace(oraculo.nomeLatim))
-                    identidade += $"\n{oraculo.nomeLatim}";
+                descricao = OrientacaoInicial + "\n\n" + descricao;
+                categoria = "Como explorar";
             }
 
-            DefinirTexto(textoNomeExibicao, textoNomeExibicaoAlternativo, identidade);
+            DefinirTexto(textoTitulo, textoTituloAlternativo, no.NomeLegivelComParte);
+            DefinirTexto(textoEstado, textoEstadoAlternativo, ehGrupo ? "Grupo selecionado" : "Estrutura selecionada");
+            DefinirTexto(textoCaminho, textoCaminhoAlternativo, caminho);
+            DefinirTexto(textoNomeNo, textoNomeNoAlternativo, string.Empty);
+            DefinirTexto(textoNomeExibicao, textoNomeExibicaoAlternativo, categoria);
             DefinirTexto(textoDescricao, textoDescricaoAlternativa, descricao);
-            DefinirTexto(textoDivisao, textoDivisaoAlternativa, divisao);
+            DefinirTexto(textoDivisao, textoDivisaoAlternativa, classificacao);
             DefinirTexto(textoNivel, textoNivelAlternativo, $"Nível: {no.NivelNo}");
-            DefinirTexto(textoCorpo, textoCorpoAlternativo, MontarCorpo(no, caminho, descricao, divisao));
+            DefinirTexto(textoCorpo, textoCorpoAlternativo, MontarCorpo(no, caminho, descricao, classificacao));
             if (noAlterado)
             {
                 RedefinirRolagemDescricao();
             }
 
             ultimoNoExibido = no;
-        }
-
-        /// <summary>
-        /// Mostra o foco atual quando não há estrutura selecionada.
-        /// </summary>
-        public void ExibirFoco(NoInteracaoAnatomica focoNo)
-        {
-            if (focoNo != null)
-                ExibirNo(focoNo, focoNo.NomeExibicao);
-            var focoNome = focoNo != null ? focoNo.NomeExibicao : "Sistema Nervoso Central";
-            DefinirTexto(textoEstado, textoEstadoAlternativo, $"Estrutura em foco: {focoNome}");
-            DefinirTexto(textoCaminho, textoCaminhoAlternativo, $"Caminho anatômico: {focoNome}");
         }
 
         /// <summary>
@@ -295,7 +302,8 @@ namespace VRSNC.Interacao
                 raizPainel.SetActive(visivel);
             }
 
-            DefinirTextoBotao(botaoAlternarPainel, "Ocultar painel");
+            // "Minimizar", e não "Ocultar painel": o "Ocultar" da barra de ações já esconde estruturas.
+            DefinirTextoBotao(botaoAlternarPainel, "Minimizar");
             DefinirTextoBotao(expandirPainelBotao, "Mostrar painel");
         }
 
@@ -306,11 +314,11 @@ namespace VRSNC.Interacao
         {
             DefinirTexto(textoTitulo, textoTituloAlternativo, tituloPadrao);
             DefinirTexto(textoEstado, textoEstadoAlternativo, "Nenhuma estrutura selecionada");
-            DefinirTexto(textoCaminho, textoCaminhoAlternativo, "Caminho anatômico: Sistema Nervoso Central");
+            DefinirTexto(textoCaminho, textoCaminhoAlternativo, "Nível inicial");
             DefinirTexto(textoNomeNo, textoNomeNoAlternativo, "Nenhuma estrutura selecionada");
-            DefinirTexto(textoNomeExibicao, textoNomeExibicaoAlternativo, "-");
-            DefinirTexto(textoDescricao, textoDescricaoAlternativa, corpoPadrao);
-            DefinirTexto(textoDivisao, textoDivisaoAlternativa, "Divisão: -");
+            DefinirTexto(textoNomeExibicao, textoNomeExibicaoAlternativo, "Como explorar");
+            DefinirTexto(textoDescricao, textoDescricaoAlternativa, OrientacaoInicial);
+            DefinirTexto(textoDivisao, textoDivisaoAlternativa, string.Empty);
             DefinirTexto(textoNivel, textoNivelAlternativo, "Nível: -");
             DefinirTexto(textoCorpo, textoCorpoAlternativo, corpoPadrao);
             ultimoNoExibido = null;
@@ -379,7 +387,7 @@ namespace VRSNC.Interacao
             {
                 var vinculo = no.VinculoAnatomico;
                 if (informacao == null)
-                    construtor.AppendLine($"{ContarRepresentacoesGrupo(no)} representações neste grupo. Explore os subgrupos e as estruturas pela lista.");
+                    construtor.AppendLine($"{ContarRepresentacoesGrupo(no)} representações neste grupo. Explore os subgrupos e as estruturas na aba Estruturas.");
             }
 
             if (no.VinculoAnatomico != null || informacao == null)
@@ -404,7 +412,125 @@ namespace VRSNC.Interacao
         /// </summary>
         private static string MontarCorpo(NoInteracaoAnatomica no, string caminho, string descricao, string divisao)
         {
-            return $"Estrutura selecionada: {no.NomeExibicao}\nCaminho anatômico: {caminho}\nNome técnico: {no.NomeNo}\nNome de exibição: {no.NomeExibicao}\nNível: {no.NivelNo}\n{divisao}\n\n{descricao}";
+            return $"Estrutura selecionada: {no.NomeLegivelComParte}\nCaminho anatômico: {caminho}\nNome técnico: {no.NomeNo}\nNível: {no.NivelNo}\n{divisao}\n\n{descricao}";
+        }
+
+        private const int NiveisVisiveisCaminho = 3;
+        // Mostrada enquanto nada foi escolhido, para quem abre o protótipo pela primeira vez.
+        private const string OrientacaoInicial = "Aponte o controle direito para uma estrutura e aperte o gatilho, ou escolha um item na aba Estruturas. Clicar num grupo já entra nele.\n\nO caminho no topo do painel volta a qualquer nível; Início volta ao começo. Isolar, Explodir e Ocultar ajudam a ver peças escondidas.\n\nPara recomeçar, segure Y por 1 segundo ou toque duas vezes em Resetar SNC. Vire o pulso esquerdo para o rosto para ver a ficha no pulso.";
+
+        /// <summary>
+        /// Mostra onde a estrutura está: seus ancestrais mais próximos, em uma linha que cabe no cabeçalho.
+        /// </summary>
+        private static string MontarCaminhoCurto(NoInteracaoAnatomica no)
+        {
+            var ancestrais = new List<string>();
+            for (var atual = no.NoPai; atual != null; atual = atual.NoPai)
+                ancestrais.Insert(0, atual.NomeLegivel);
+            if (ancestrais.Count == 0)
+                return "Nível inicial";
+            if (ancestrais.Count <= NiveisVisiveisCaminho)
+                return string.Join(" › ", ancestrais);
+            return "… › " + string.Join(" › ", ancestrais.GetRange(ancestrais.Count - NiveisVisiveisCaminho, NiveisVisiveisCaminho));
+        }
+
+        private static string MontarCategoria(NoInteracaoAnatomica no, bool ehGrupo)
+        {
+            if (no.NaoPossuiModelo3D)
+                return "Sem modelo 3D no acervo atual";
+            if (!ehGrupo)
+                return "Estrutura anatômica";
+            var quantidade = ContarRepresentacoesGrupo(no);
+            return quantidade == 1 ? "Grupo anatômico · 1 estrutura" : $"Grupo anatômico · {quantidade} estruturas";
+        }
+
+        /// <summary>
+        /// Classificação traduzida da estrutura; para grupos, orienta a escolha de uma subestrutura.
+        /// </summary>
+        private static string MontarClassificacao(NoInteracaoAnatomica no, InformacaoEstruturaAnatomica informacao)
+        {
+            if (informacao == null)
+                return no.NosFilhos.Count > 0 ? "Escolha uma subestrutura na aba Estruturas." : string.Empty;
+            var partes = new List<string>();
+            foreach (var parte in new[] { TextoEnumeracoesAnatomicas.Exibir(informacao.DivisaoPrincipal), TextoEnumeracoesAnatomicas.Exibir(informacao.Subdivisao), TextoEnumeracoesAnatomicas.Exibir(informacao.LoboCortical) })
+            {
+                if (!string.IsNullOrWhiteSpace(parte) && !partes.Contains(parte))
+                    partes.Add(parte);
+            }
+
+            return string.Join(" › ", partes);
+        }
+
+        /// <summary>A classificação tem linha própria (Division) visível neste painel?</summary>
+        private bool ClassificacaoTemLinhaPropria => (textoDivisao != null && textoDivisao.gameObject.activeSelf) || (textoDivisaoAlternativa != null && textoDivisaoAlternativa.gameObject.activeSelf);
+
+        /// <summary>
+        /// Resumo didático e descrição primeiro; estado de verificação, códigos e nomes de origem no fim.
+        /// </summary>
+        private string MontarConteudo(NoInteracaoAnatomica no, InformacaoEstruturaAnatomica informacao, RegistroOraculoAnatomico oraculo, string classificacao)
+        {
+            var construtor = new StringBuilder();
+            // Um selo curto no topo substitui o aviso de revisão que antes pesava no meio de toda ficha.
+            var linhaDiscreta = MontarSeloRevisao(oraculo);
+            if (!string.IsNullOrWhiteSpace(classificacao))
+                linhaDiscreta = classificacao + "\n" + linhaDiscreta;
+            construtor.AppendLine(Discreto(linhaDiscreta)).AppendLine();
+            if (oraculo != null)
+            {
+                construtor.AppendLine(oraculo.resumoDidatico);
+                if (!string.IsNullOrWhiteSpace(oraculo.descricaoCientifica))
+                    construtor.AppendLine().AppendLine(oraculo.descricaoCientifica);
+            }
+            else
+            {
+                construtor.AppendLine(MontarDescricao(no, informacao));
+            }
+
+            // Detalhes de verificação, códigos e nomes de origem ficam no fim, em letra menor.
+            var detalhes = OraculoAnatomico.ObterEstadoVerificacao(oraculo);
+            var identidade = MontarIdentidade(no, oraculo);
+            if (!string.IsNullOrWhiteSpace(identidade))
+                detalhes += "\n\n" + identidade;
+            construtor.AppendLine().Append(Discreto(detalhes));
+            return construtor.ToString().Trim();
+        }
+
+        private const int TamanhoTextoDiscreto = 15;
+
+        /// <summary>Texto secundário: menor e em cinza, com marcação compatível com Text e TMP.</summary>
+        private static string Discreto(string texto) => string.IsNullOrWhiteSpace(texto) ? string.Empty : $"<size={TamanhoTextoDiscreto}><color={TemaVRSNC.HexTextoSecundario}>{texto}</color></size>";
+
+        /// <summary>Resumo de uma linha do estado da ficha: revisão docente e qualidade das fontes.</summary>
+        private static string MontarSeloRevisao(RegistroOraculoAnatomico registro)
+        {
+            if (registro == null)
+                return "Sem ficha científica no catálogo";
+            var revisada = !string.IsNullOrWhiteSpace(registro.revisaoDocente) && registro.revisaoDocente.IndexOf("não", System.StringComparison.OrdinalIgnoreCase) < 0;
+            var fontes = registro.estadoVerificacao switch
+            {
+                "source_checked" => "fontes conferidas",
+                "limited_specificity" => "fontes de abrangência limitada",
+                _ => "fontes não confirmadas",
+            };
+            return (revisada ? "Revisado por docente" : "Revisão docente pendente") + " · " + fontes;
+        }
+
+        private static string MontarIdentidade(NoInteracaoAnatomica no, RegistroOraculoAnatomico oraculo)
+        {
+            if (oraculo == null)
+            {
+                var vinculo = no.VinculoAnatomico;
+                return vinculo != null && !vinculo.EhGrupo ? $"Código: {vinculo.ConceitoId}\nNome de origem (inglês): {vinculo.NomeCientificoExibido}" : string.Empty;
+            }
+
+            var linhas = new List<string>();
+            if (!string.IsNullOrWhiteSpace(oraculo.idFma))
+                linhas.Add($"Códigos: {oraculo.idArquivo} | {oraculo.idFma}");
+            if (!string.IsNullOrWhiteSpace(oraculo.nomeIngles))
+                linhas.Add($"Inglês: {oraculo.nomeIngles}");
+            if (!string.IsNullOrWhiteSpace(oraculo.nomeLatim))
+                linhas.Add($"Latim: {oraculo.nomeLatim}");
+            return string.Join("\n", linhas);
         }
 
         /// <summary>

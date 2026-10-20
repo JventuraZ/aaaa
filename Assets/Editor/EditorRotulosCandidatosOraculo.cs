@@ -189,7 +189,9 @@ public static class EditorRotulosCandidatosOraculo
     private static DocumentoOraculoAnatomico ExigirDocumentoCandidatos()
     {
         var caminho = CaminhoProjeto(CaminhoCandidato);
-        if (!File.Exists(caminho) || HashArquivo(caminho) != AssinaturaEsperada)
+        if (!File.Exists(caminho))
+            throw new FileNotFoundException("O candidato revisado do oráculo não está neste computador (" + CaminhoCandidato + "). Este menu só serve à revisão editorial das fichas; o arquivo fica em outputs/, fora do repositório.", caminho);
+        if (HashArquivo(caminho) != AssinaturaEsperada)
             throw new InvalidOperationException("O hash do candidato do oráculo revisado não corresponde ao hash de publicação aprovado.");
         var documento = LeitorJsonCompativel.Ler<DocumentoOraculoAnatomico>(File.ReadAllText(caminho));
         if (documento == null || documento.versao != "2026-09-07.2")

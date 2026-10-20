@@ -236,6 +236,59 @@ namespace VRSNC.Interacao
         }
 
         /// <summary>
+        /// Arraste da mão no ar: gira o alvo ativo em torno do seu centro visual. O horizontal gira em torno do eixo
+        /// vertical da câmera e o vertical em torno do eixo horizontal dela, para a face voltada ao usuário acompanhar a mão.
+        /// </summary>
+        public void GirarPorArraste(Transform alvo, Vector3 pivo, float grausHorizontal, float grausVertical)
+        {
+            if (alvo == null || agarrando)
+            {
+                return;
+            }
+
+            var rotacao = Quaternion.AngleAxis(grausHorizontal, ResolverDirecaoCimaCamera()) * Quaternion.AngleAxis(grausVertical, ResolverDirecaoDireitaCamera());
+            GirarEmTornoDoPivo(alvo, pivo, rotacao);
+        }
+
+        /// <summary>Aplica uma rotação de mundo ao alvo mantendo o pivô parado.</summary>
+        public static void GirarEmTornoDoPivo(Transform alvo, Vector3 pivo, Quaternion rotacao)
+        {
+            alvo.SetPositionAndRotation(pivo + rotacao * (alvo.position - pivo), rotacao * alvo.rotation);
+        }
+
+        /// <summary>Centro dos renderers ativos do alvo, no mundo; sem renderer, a própria posição.</summary>
+        public static Vector3 CentroVisual(Transform alvo)
+        {
+            var limites = new Bounds(alvo.position, Vector3.zero);
+            var primeiro = true;
+            foreach (var renderizador in alvo.GetComponentsInChildren<Renderer>())
+            {
+                if (!renderizador.enabled)
+                {
+                    continue;
+                }
+
+                if (primeiro)
+                {
+                    limites = renderizador.bounds;
+                    primeiro = false;
+                }
+                else
+                {
+                    limites.Encapsulate(renderizador.bounds);
+                }
+            }
+
+            return limites.center;
+        }
+
+        private Vector3 ResolverDirecaoDireitaCamera()
+        {
+            var camera = transformacaoCamera != null ? transformacaoCamera : Camera.main != null ? Camera.main.transform : null;
+            return camera != null ? camera.right.normalized : Vector3.right;
+        }
+
+        /// <summary>
         /// Atualiza a câmera usada como referência dos movimentos.
         /// </summary>
         public void DefinirTransformacaoCamera(Transform camera)
@@ -252,7 +305,7 @@ namespace VRSNC.Interacao
         }
 
         /// <summary>
-        /// Prioriza a estrutura selecionada; se não existir seleção, usa o SNC completo.
+        /// Prioriza a estrutura selecionada; sem seleção, usa o grupo em foco e, no nível inicial, o SNC completo.
         /// </summary>
         private Transform ResolverAlvoAtivo()
         {
@@ -260,6 +313,13 @@ namespace VRSNC.Interacao
             if (selecionado != null)
             {
                 return selecionado.transform;
+            }
+
+            // Clicar num grupo entra nele sem selecioná-lo; o grupo aberto continua manipulável.
+            var foco = gerenciadorSelecao != null ? gerenciadorSelecao.NoEmFoco : null;
+            if (foco != null && foco.NoPai != null)
+            {
+                return foco.transform;
             }
 
             return alvoRaiz != null ? alvoRaiz : transform;

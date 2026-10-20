@@ -7,7 +7,7 @@ namespace VRSNC.Interacao
     // Função: restaura seleção, foco, visibilidade, vista explodida, grab e transformações para o estado inicial.
     // Relação com o protótipo: garante que o Brain original permaneça desativado e que a organização anatômica ativa volte
     // ao estado funcional sem recriar hierarquia, colliders ou componentes.
-    // Objetos da cena: usado no Sistema_Nervoso_Central e acionado pelo Botao_Reset_SNC e pelo painel.
+    // Objetos da cena: usado no Sistema_Nervoso_Central e acionado pelo botão Resetar SNC do painel e pelo botão Y do controle esquerdo.
     /// <summary>
     /// Centraliza o reset seguro do protótipo.
     /// O reset chama os controladores existentes e restaura o estado capturado, sem remover scripts ou objetos.
@@ -100,8 +100,13 @@ namespace VRSNC.Interacao
         /// <summary>
         /// Executa reset completo do protótipo preservando objetos e componentes existentes.
         /// </summary>
+        /// <summary>Avisados no início e no fim do reset geral; o retorno sensorial silencia os passos intermediários.</summary>
+        public event System.Action emRestaurando;
+        public event System.Action emRestaurado;
+
         public void RestaurarTudo()
         {
+            emRestaurando?.Invoke();
             // Primeiro cancela os proprietários dos gestos: nenhuma atualização
             // tardia pode reaplicar a expansão ou o agarre depois do reset.
             GetComponent<PonteInteracaoMao>()?.Soltar();
@@ -140,6 +145,7 @@ namespace VRSNC.Interacao
             gerenciadorSelecao?.LimparSelecao();
             gerenciadorSelecao?.RedefinirFoco();
             controladorSelecaoPorRaio?.LimparFoco();
+            emRestaurado?.Invoke();
         }
     }
 }

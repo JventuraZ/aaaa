@@ -7,6 +7,10 @@
 [Ll]ogs/
 node_modules/
 /[Uu]ser[Ss]ettings/
+# Intermediários do CMake/Gradle da compilação Android e cenas de recuperação após travamento do Editor
+/.utmp/
+/[Aa]ssets/_Recovery/
+/[Aa]ssets/_Recovery.meta
 
 # Unity Version Control / Plastic SCM
 .plastic/

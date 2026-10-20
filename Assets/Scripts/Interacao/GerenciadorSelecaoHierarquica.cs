@@ -222,6 +222,35 @@ namespace VRSNC.Interacao
                 return;
             }
 
+            // Clicar num grupo abre o grupo: ele vira o foco ("Em foco") em vez de ficar selecionado e todo amarelo.
+            if (entrarAutomaticamenteNoSelecionado && no.NosFilhos.Count > 0)
+            {
+                if (selecionadoNo != null)
+                {
+                    LimparSelecao();
+                }
+
+                EntrarNo(no);
+                return;
+            }
+
+            AplicarSelecao(no);
+        }
+
+        /// <summary>
+        /// Seleciona o nó sem entrar nele, mesmo com a entrada automática ligada. É assim que o Voltar deixa marcada a
+        /// "concha" de onde o usuário saiu: o grupo fica em âmbar, com a ficha aberta, e tocar nele de novo volta para dentro.
+        /// </summary>
+        public void SelecionarSemEntrar(NoInteracaoAnatomica no)
+        {
+            if (EhCandidatoValido(no))
+            {
+                AplicarSelecao(no);
+            }
+        }
+
+        private void AplicarSelecao(NoInteracaoAnatomica no)
+        {
             LimparRealceSelecao();
             selecionadoNo = no;
             AplicarRealce(selecionadoNo, corSelecionado, renderizadoresSelecionados);
@@ -232,18 +261,12 @@ namespace VRSNC.Interacao
             }
 
             emNoSelecionado.Invoke(selecionadoNo);
-            if (entrarAutomaticamenteNoSelecionado && selecionadoNo.NosFilhos.Count > 0)
-            {
-                EntrarNo(selecionadoNo);
-            }
-            else
-            {
-                painelNavegacao?.Atualizar(noFocoAtual);
-            }
+            painelNavegacao?.Atualizar(noFocoAtual);
         }
 
         /// <summary>
-        /// Entra na estrutura selecionada quando ela possui filhos diretos navegáveis.
+        /// Entra na estrutura selecionada quando ela possui filhos diretos navegáveis. Como o clique num grupo, entrar
+        /// desfaz a seleção: o grupo vira o foco, em vez de continuar todo em âmbar enquanto o usuário escolhe dentro dele.
         /// </summary>
         public void EntrarNoSelecionado()
         {
@@ -259,7 +282,9 @@ namespace VRSNC.Interacao
                 return;
             }
 
-            EntrarNo(selecionadoNo);
+            var grupo = selecionadoNo;
+            LimparSelecao();
+            EntrarNo(grupo);
         }
 
         /// <summary>
@@ -298,16 +323,38 @@ namespace VRSNC.Interacao
         }
 
         /// <summary>
-        /// Sobe um nível na hierarquia anatômica, limpando a seleção atual.
+        /// Sobe exatamente um nível e deixa selecionado o grupo de onde o usuário saiu (a "concha" que contém o que
+        /// estava aberto): com o Giro frontal médio selecionado dentro do Lobo frontal, Voltar abre o Córtex com o
+        /// Lobo frontal em âmbar e a ficha dele. No nível inicial, Voltar só desfaz a seleção.
         /// </summary>
         public void VoltarAoNoPai()
         {
-            var pai = noFocoAtual != null ? noFocoAtual.NoPai : null;
-            if (pai != null)
+            var concha = noFocoAtual;
+            var pai = concha != null ? concha.NoPai : null;
+            if (pai == null)
             {
-                LimparSelecao();
-                EntrarNo(pai);
+                if (selecionadoNo != null)
+                {
+                    LimparSelecao();
+                }
+
+                return;
             }
+
+            LimparSelecao();
+            EntrarNo(pai);
+            SelecionarSemEntrar(concha);
+        }
+
+        /// <summary>Nome do grupo que o Voltar vai deixar selecionado, para o rótulo do botão; vazio quando não há para onde voltar.</summary>
+        public string DestinoVoltar()
+        {
+            if (noFocoAtual != null && noFocoAtual.NoPai != null)
+            {
+                return noFocoAtual.NomeLegivel;
+            }
+
+            return selecionadoNo != null ? "Início" : string.Empty;
         }
 
         /// <summary>
@@ -369,6 +416,11 @@ namespace VRSNC.Interacao
             {
                 controladorVisibilidade.ExibirSomenteNo(selecionadoNo);
             }
+            else if (noFocoAtual != null && noFocoAtual != raizNo)
+            {
+                // Sem seleção, isola o grupo em que o usuário entrou.
+                controladorVisibilidade.ExibirSomenteNo(noFocoAtual);
+            }
 
             painelNavegacao?.AtualizarEstadosControles();
         }
@@ -410,7 +462,6 @@ namespace VRSNC.Interacao
         {
             // Protege chamadas programáticas anteriores ao ciclo normal de Awake sem
             // reintroduzir uma criação de objeto nativo no inicializador de campo.
-            destacarBloqueio ??= new MaterialPropertyBlock();
             foreach (var renderizador in ObterRenderizadoresParaRealce(no))
             {
                 if (renderizador == null)
@@ -418,23 +469,32 @@ namespace VRSNC.Interacao
                     continue;
                 }
 
-                if (!bloqueiosOriginais.ContainsKey(renderizador))
-                {
-                    var bloqueioOriginal = new MaterialPropertyBlock();
-                    renderizador.GetPropertyBlock(bloqueioOriginal);
-                    bloqueiosOriginais[renderizador] = bloqueioOriginal;
-                }
-
-                // GetPropertyBlock preserva propriedades externas que já estejam no
-                // renderer; o bloco de trabalho é reutilizado porque SetPropertyBlock
-                // copia seus valores no renderer.
-                destacarBloqueio.Clear();
-                renderizador.GetPropertyBlock(destacarBloqueio);
-                destacarBloqueio.SetColor(BaseCorId, cor);
-                destacarBloqueio.SetColor(CorId, cor);
-                renderizador.SetPropertyBlock(destacarBloqueio);
+                AplicarCorRenderizador(renderizador, cor);
                 definirAlvo.Add(renderizador);
             }
+        }
+
+        /// <summary>
+        /// Pinta um renderer com a cor de destaque, guardando antes o bloco original para a restauração.
+        /// </summary>
+        private void AplicarCorRenderizador(Renderer renderizador, Color cor)
+        {
+            destacarBloqueio ??= new MaterialPropertyBlock();
+            if (!bloqueiosOriginais.ContainsKey(renderizador))
+            {
+                var bloqueioOriginal = new MaterialPropertyBlock();
+                renderizador.GetPropertyBlock(bloqueioOriginal);
+                bloqueiosOriginais[renderizador] = bloqueioOriginal;
+            }
+
+            // GetPropertyBlock preserva propriedades externas que já estejam no
+            // renderer; o bloco de trabalho é reutilizado porque SetPropertyBlock
+            // copia seus valores no renderer.
+            destacarBloqueio.Clear();
+            renderizador.GetPropertyBlock(destacarBloqueio);
+            destacarBloqueio.SetColor(BaseCorId, cor);
+            destacarBloqueio.SetColor(CorId, cor);
+            renderizador.SetPropertyBlock(destacarBloqueio);
         }
 
         /// <summary>
@@ -454,32 +514,39 @@ namespace VRSNC.Interacao
         }
 
         /// <summary>
-        /// Restaura apenas o destaque de hover, preservando renderers ainda selecionados.
+        /// Restaura apenas o destaque de hover; renderers ainda selecionados voltam à cor de seleção.
         /// </summary>
         private void LimparRealceFoco()
         {
-            RestaurarRenderizadores(focoRenderizadores, renderizadoresSelecionados);
+            RestaurarRenderizadores(focoRenderizadores, renderizadoresSelecionados, corSelecionado);
             focoRenderizadores.Clear();
         }
 
         /// <summary>
-        /// Restaura o destaque de seleção, preservando renderers que também estejam em hover.
+        /// Restaura o destaque de seleção; renderers ainda em hover voltam à cor de hover.
         /// </summary>
         private void LimparRealceSelecao()
         {
-            RestaurarRenderizadores(renderizadoresSelecionados, focoRenderizadores);
+            RestaurarRenderizadores(renderizadoresSelecionados, focoRenderizadores, corFoco);
             renderizadoresSelecionados.Clear();
         }
 
         /// <summary>
-        /// Devolve os renderers aos MaterialPropertyBlocks capturados antes do destaque.
+        /// Devolve os renderers aos MaterialPropertyBlocks capturados antes do destaque. Os que
+        /// continuam no outro destaque recebem de novo a cor dele, em vez de manter a cor removida.
         /// </summary>
-        private void RestaurarRenderizadores(HashSet<Renderer> renderizadores, HashSet<Renderer> manterDestacado)
+        private void RestaurarRenderizadores(HashSet<Renderer> renderizadores, HashSet<Renderer> manterDestacado, Color corMantida)
         {
             foreach (var renderizador in renderizadores)
             {
-                if (renderizador == null || manterDestacado.Contains(renderizador))
+                if (renderizador == null)
                 {
+                    continue;
+                }
+
+                if (manterDestacado.Contains(renderizador))
+                {
+                    AplicarCorRenderizador(renderizador, corMantida);
                     continue;
                 }
 

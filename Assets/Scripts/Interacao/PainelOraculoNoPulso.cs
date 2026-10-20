@@ -128,15 +128,18 @@ namespace VRSNC.Interacao
             atual = null;
             if (no != null)
                 OraculoAnatomico.TentarObter(no.VinculoAnatomico, out atual);
-            cabecalho.text = atual != null ? atual.nomePortugues : no != null ? no.NomeExibicao : "Oráculo anatômico";
-            resumo.text = OraculoAnatomico.ObterEstadoVerificacao(atual) + "\n\n" + (atual != null ? atual.resumoDidatico : "Selecione uma estrutura para consultar sua ficha anatômica.");
+            cabecalho.text = no != null ? no.NomeLegivelComParte : "Oráculo anatômico";
+            // O resumo didático vem primeiro; o estado de verificação fica no fim, como na ficha principal.
+            resumo.text = (atual != null ? atual.resumoDidatico : "Selecione uma estrutura para consultar sua ficha anatômica.") + "\n\n" + OraculoAnatomico.ObterEstadoVerificacao(atual);
             bibliografia.text = atual != null ? OraculoAnatomico.ObterBibliografia(atual) : string.Empty;
             bibliografia.gameObject.SetActive(false);
             if (botaoFonte != null)
                 botaoFonte.interactable = atual != null;
-            DefinirRotuloFonte("Exibir fonte");
+            DefinirRotuloFonte("Fonte");
             if (entrarBotao != null)
                 entrarBotao.interactable = selecao != null && selecao.NoSelecionado != null && selecao.NoSelecionado.NosFilhos.Count > 0;
+            foreach (var botao in new[] { botaoFonte, entrarBotao, voltarBotao, botaoIsolar })
+                VRSNC.Interface.EstiloBotaoInterface.AtualizarAparencia(botao);
             AtualizarDisposicao();
         }
 
@@ -146,7 +149,7 @@ namespace VRSNC.Interacao
                 return;
             exibindoFontes = !exibindoFontes && atual != null;
             bibliografia.gameObject.SetActive(exibindoFontes);
-            DefinirRotuloFonte(exibindoFontes ? "Ocultar fonte" : "Exibir fonte");
+            DefinirRotuloFonte(exibindoFontes ? "Ocultar fonte" : "Fonte");
             AtualizarDisposicao();
         }
 

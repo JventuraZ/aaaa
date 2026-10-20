@@ -72,18 +72,29 @@ namespace VRSNC.FerramentasEditor
                 VerificarFator(coordenador, global, primeiro, segundo, 0f, reagarrarDistancia, reagarrarFator, ajuste, referencia, raiz, folhas, falhas);
                 Exigir(raizPostura.Corresponde(raiz.transform) && referencia.PosicoesFolhasERecursosCorrespondem(folhas), "A sequência de distância 1, 0,6, 0,2 e 0 preserva a raiz e restaura toda a anatomia", falhas);
                 Exigir(coordenador.Concluir(), "zero-factor reverse transition completes", falhas);
-                // Um ancestral anatômico movido/rotacionado e uma folha rotacionada são canonizados
-                // na próxima escrita explícita do fator; a pose raiz continua pertencendo ao usuário.
+                // A pose que o usuário dá a um grupo e a rotação de uma folha pertencem a ele: a transição
+                // global de fator restaura só a posição local das folhas e nunca grava transforms de grupo
+                // (ControladorExpansaoGlobal.AplicarFator).
                 var ancestral = folhas[0].No.NoPai;
                 if (ancestral != null)
                 {
                     var ancestralPosicao = ancestral.transform.localPosition;
                     var ancestralRotacao = ancestral.transform.localRotation;
+                    var folhaRotacao = folhas[0].transform.localRotation;
                     ancestral.transform.localPosition += new Vector3(0.07f, -0.02f, 0.04f);
                     ancestral.transform.Rotate(Vector3.up, 19f, Space.Self);
                     folhas[0].transform.Rotate(Vector3.right, 31f, Space.Self);
-                    Exigir(global.DefinirFator(0f), "O fator 0 aceita uma restauração canônica com valores finitos", falhas);
-                    Exigir((ancestral.transform.localPosition - ancestralPosicao).sqrMagnitude < Epsilon * Epsilon && Quaternion.Angle(ancestral.transform.localRotation, ancestralRotacao) < 0.001f && referencia.PosicoesFolhasERecursosCorrespondem(folhas), "O fator 0 restaura a anatomia dos grupos e elementos terminais que foram movidos", falhas);
+                    var ancestralPosicaoUsuario = ancestral.transform.localPosition;
+                    var ancestralRotacaoUsuario = ancestral.transform.localRotation;
+                    var folhaRotacaoUsuario = folhas[0].transform.localRotation;
+                    Exigir(global.DefinirFator(0f), "O fator 0 aceita uma restauração com valores finitos", falhas);
+                    Exigir((ancestral.transform.localPosition - ancestralPosicaoUsuario).sqrMagnitude < Epsilon * Epsilon && Quaternion.Angle(ancestral.transform.localRotation, ancestralRotacaoUsuario) < 0.001f && Quaternion.Angle(folhas[0].transform.localRotation, folhaRotacaoUsuario) < 0.001f, "O fator 0 preserva a pose dada pelo usuário ao grupo e a rotação da folha", falhas);
+                    Exigir(referencia.RecursosEHierarquiaCorrespondem(folhas), "Malha e hierarquia inalteradas após a pose dada pelo usuário", falhas);
+                    // Devolve a pose de teste para que as verificações seguintes partam da referência.
+                    ancestral.transform.localPosition = ancestralPosicao;
+                    ancestral.transform.localRotation = ancestralRotacao;
+                    folhas[0].transform.localRotation = folhaRotacao;
+                    Exigir(referencia.PosicoesFolhasERecursosCorrespondem(folhas), "No fator 0, as posições locais das folhas correspondem à referência", falhas);
                 }
 
                 Exigir(!global.DefinirFator(float.NaN) && !global.DefinirFator(float.PositiveInfinity), "non-finite factors are rejected without transform corruption", falhas);

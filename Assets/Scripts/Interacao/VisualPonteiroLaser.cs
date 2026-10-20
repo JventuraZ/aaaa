@@ -86,6 +86,14 @@ namespace VRSNC.Interacao
                 return;
             }
 
+            // Com a mão rastreada no lugar do controle, a origem estabilizada fica parada na última pose
+            // do controle: sem laser, para não sobrar um raio congelado no ar.
+            if (controladorSelecaoPorRaio != null && !controladorSelecaoPorRaio.OrigemRaioDisponivel(origem))
+            {
+                renderizadorLinha.enabled = false;
+                return;
+            }
+
             // Near/poke possui o painel enquanto a mão/controle está dentro da sua
             // zona de proximidade. Não desenha um raio através da UI durante essa transição.
             if (ZonaProximidadePainelInterface.PontoEstaProximoDoPainel(origem.position))

@@ -111,7 +111,7 @@ namespace VRSNC.Interface
         private void DefinirFocoVisual()
         {
             if (bordaImagem != null)
-                bordaImagem.color = quantidadeFocos > 0 ? new Color(.30f, .36f, .42f, .35f) : new Color(.30f, .36f, .42f, .08f);
+                bordaImagem.color = quantidadeFocos > 0 ? TemaVRSNC.BordaRedimensionarEmFoco : TemaVRSNC.BordaRedimensionar;
         }
 
         private void AtualizarColisorParaAtualRetangulo()

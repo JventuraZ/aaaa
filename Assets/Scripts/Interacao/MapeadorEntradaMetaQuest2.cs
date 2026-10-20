@@ -169,6 +169,10 @@ namespace VRSNC.Interacao
         // Distância máxima para considerar um painel world-space como bloqueador de manipulação anatômica.
         [SerializeField]
         private float distanciaMaximaBloqueioUIPainel = 8f;
+        // Clicar num grupo já entra nele; desligado, o grupo fica selecionado e Entrar (B) desce um nível.
+        [SerializeField]
+        private bool abrirGrupoAoClicar = true;
+        public bool AbreGrupoAoClicar => abrirGrupoAoClicar;
         // Ações resolvidas em runtime, vindas da referência direta ou do asset por nome.
         private InputAction acaoSelecionarDireita;
         private InputAction acaoAgarreDireito;
@@ -191,12 +195,12 @@ namespace VRSNC.Interacao
         private readonly List<Vector3> bloqueioInterfaceRaioPontos = new(2);
         private readonly List<RaycastResult> bloqueioInterfaceResultados = new(8);
         /// <summary>
-        /// Resolve referências e desativa auto-enter para manter a navegação manual em camadas.
+        /// Resolve referências e aplica a regra de navegação: por padrão, clicar num grupo já entra nele.
         /// </summary>
         private void Awake()
         {
             ResolverReferencias();
-            gerenciadorSelecao?.DefinirEntradaAutomaticaNoSelecionado(false);
+            gerenciadorSelecao?.DefinirEntradaAutomaticaNoSelecionado(abrirGrupoAoClicar);
         }
 
         /// <summary>
@@ -270,6 +274,17 @@ namespace VRSNC.Interacao
                 manipuladorObjetoSelecionado.Manipular(direitoAlavanca);
             }
 
+            // Analógico esquerdo: rola a aba aberta do painel, ficha ou lista (Left_NavigatePanel).
+            var esquerdoAlavanca = LerVetor2(acaoNavegarEsquerda);
+            if (Mathf.Abs(esquerdoAlavanca.y) >= zonaMorta)
+            {
+                var abas = painelNavegacao != null ? painelNavegacao.GetComponent<AbasPainelAnatomico>() : null;
+                if (abas != null)
+                    abas.Rolar(esquerdoAlavanca.y * Time.deltaTime);
+                else
+                    painelNavegacao?.Rolar(esquerdoAlavanca.y * Time.deltaTime);
+            }
+
             ManipularEditorAlternativas();
         }
 
@@ -293,7 +308,7 @@ namespace VRSNC.Interacao
             transformacaoCamera = camera;
             entradaAcoes = recursoAcao;
             gerenciadorModalidadeEntrada = gerenciadorModalidade;
-            gerenciadorSelecao?.DefinirEntradaAutomaticaNoSelecionado(false);
+            gerenciadorSelecao?.DefinirEntradaAutomaticaNoSelecionado(abrirGrupoAoClicar);
             manipuladorObjetoSelecionado?.Configurar(transform, gerenciadorSelecao, transformacaoCamera);
             ResolverBloqueioInterfaceEmissorRaio();
         }
@@ -681,10 +696,16 @@ namespace VRSNC.Interacao
         /// </summary>
         public bool ProcessaAtalhosDoEditor => isActiveAndEnabled && habilitarEditorAlternativas;
 
+        /// <summary>
+        /// Verdadeiro enquanto o XR Interaction Simulator do XRI roda no Editor. Ele usa Q/E, R, C, V e I para mover
+        /// a cabeça e os controles simulados, então os atalhos próprios ficam desligados para não dispararem junto.
+        /// </summary>
+        public static bool SimuladorXRAtivo => UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRInteractionSimulator.instance != null;
+
         private void ManipularEditorAlternativas()
         {
 #if UNITY_EDITOR
-            if (!habilitarEditorAlternativas || Keyboard.current == null)
+            if (!habilitarEditorAlternativas || Keyboard.current == null || SimuladorXRAtivo)
             {
                 return;
             }
@@ -790,7 +811,7 @@ namespace VRSNC.Interacao
             var roteador = raizObjeto.GetComponent<RoteadorEntradaXR>();
             var manipuladorSelecionado = GarantirComponente<ManipuladorObjetoSelecionado>(raizObjeto);
             var mapeador = GarantirComponente<MapeadorEntradaMetaQuest2>(raizObjeto);
-            selecao?.DefinirEntradaAutomaticaNoSelecionado(false);
+            selecao?.DefinirEntradaAutomaticaNoSelecionado(mapeador.AbreGrupoAoClicar);
             var transformacaoCamera = Camera.main != null ? Camera.main.transform : EncontrarTransformacaoCamera();
             var direito = EncontrarControladorSemelhanteTransformacao(raizObjeto.transform, true) ?? transformacaoCamera;
             var esquerda = EncontrarControladorSemelhanteTransformacao(raizObjeto.transform, false);
@@ -875,6 +896,8 @@ namespace VRSNC.Interacao
             var mascara = areaVisivel.gameObject.AddComponent<Mask>();
             mascara.showMaskGraphic = false;
             var conteudo = CriarRetangulo("Content", areaVisivel.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(0f, 0f));
+            // Pivô no topo: uma lista curta fica encostada no alto da área, e não centralizada.
+            conteudo.pivot = new Vector2(0.5f, 1f);
             var organizacaoConteudo = conteudo.gameObject.AddComponent<VerticalLayoutGroup>();
             organizacaoConteudo.childControlHeight = false;
             organizacaoConteudo.childControlWidth = true;
@@ -902,7 +925,7 @@ namespace VRSNC.Interacao
             var isolarBotao = CriarBotao("Button_Isolate", controles.transform, "Isolar");
             var limparBotao = CriarBotao("Button_Clear", controles.transform, "Limpar seleção");
             var alternarListaBotao = CriarBotao("Button_ToggleList", controles.transform, "Ocultar lista");
-            var recolherBotao = CriarBotao("Button_CollapsePanel", controles.transform, "Ocultar painel");
+            var recolherBotao = CriarBotao("Button_CollapsePanel", controles.transform, "Minimizar");
             var recolhidaRaiz = CriarImagem("CollapsedTab", retangulo, new Vector2(0f, 0.82f), new Vector2(0.42f, 1f), new Vector2(0f, 0f), new Vector2(0f, 0f), new Color(0.02f, 0.025f, 0.035f, 0.92f));
             var expandirBotao2 = CriarBotao("Button_ExpandPanel", recolhidaRaiz.transform, "Mostrar painel");
             var expandirRetangulo = expandirBotao2.GetComponent<RectTransform>();

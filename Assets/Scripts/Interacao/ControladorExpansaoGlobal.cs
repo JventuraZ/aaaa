@@ -32,6 +32,8 @@ namespace VRSNC.Interacao
         private bool indexado;
         private int quantidadeGruposIndexados;
         private bool gestoAtivo;
+        private bool avisoIndiceEmitido;
+        private bool avisoContagemEmitido;
         private float fator;
         private uint estadoVersao;
         public bool EstaPronto => indexado;
@@ -88,9 +90,17 @@ namespace VRSNC.Interacao
                     quantidadeGrupos++;
             }
 
-            if (interagiveis.Length != QuantidadeFolhasEsperada || quantidadeGrupos != QuantidadeGruposEsperada)
+            if (interagiveis.Length == 0 || quantidadeGrupos == 0)
             {
+                AvisarIndiceIndisponivel($"nenhuma estrutura ou grupo anatômico encontrado sob {raizAnatomica.name}");
                 return false;
+            }
+
+            if ((interagiveis.Length != QuantidadeFolhasEsperada || quantidadeGrupos != QuantidadeGruposEsperada) && !avisoContagemEmitido)
+            {
+                // O catálogo mudou: a expansão segue com o que existe na cena, mas a diferença fica registrada.
+                avisoContagemEmitido = true;
+                Debug.LogWarning($"[VR SNC] Expansão global indexando {interagiveis.Length} estruturas e {quantidadeGrupos} grupos; o catálogo de referência tem {QuantidadeFolhasEsperada} e {QuantidadeGruposEsperada}.", this);
             }
 
             folhas.Clear();
@@ -98,6 +108,7 @@ namespace VRSNC.Interacao
             nosIndexados.Clear();
             quantidadeGruposIndexados = quantidadeGrupos;
             var centroVisual = CalcularCentroVisual(interagiveis);
+            var raizEhGrupo = false;
             foreach (var vinculo2 in vinculos)
             {
                 if (vinculo2 == null || !vinculo2.EhGrupo)
@@ -106,16 +117,22 @@ namespace VRSNC.Interacao
                 if (noGrupo == null)
                 {
                     LimparIndice();
+                    AvisarIndiceIndisponivel($"o grupo {vinculo2.name} não tem nó de interação");
                     return false;
                 }
 
-                // A raiz é o trigésimo segundo grupo do catálogo, mas deliberadamente
+                // A raiz também é um grupo do catálogo, mas deliberadamente
                 // não grava pose: o fechamento global deve preservar a pose raiz do SNC do usuário.
                 if (noGrupo.transform == raizAnatomica)
+                {
+                    raizEhGrupo = true;
                     continue;
+                }
+
                 if (noGrupo.transform.parent == null)
                 {
                     LimparIndice();
+                    AvisarIndiceIndisponivel($"o grupo {noGrupo.name} está fora da hierarquia anatômica");
                     return false;
                 }
 
@@ -129,6 +146,7 @@ namespace VRSNC.Interacao
                 if (no == null || no.VinculoAnatomico == null || no.VinculoAnatomico.EhGrupo || !nosIndexados.Add(no) || no.transform.parent == null)
                 {
                     LimparIndice();
+                    AvisarIndiceIndisponivel($"a estrutura {(interagivel != null ? interagivel.name : "(nula)")} não tem um vínculo anatômico de estrutura único");
                     return false;
                 }
 
@@ -159,13 +177,22 @@ namespace VRSNC.Interacao
                 folhas.Add(new EstadoFolha(no, no.transform.parent, no.transform.localPosition, variacaoLocal.sqrMagnitude >= 0.000001f ? direcao.normalized : Vector3.zero));
             }
 
-            indexado = folhas.Count == QuantidadeFolhasEsperada && nosIndexados.Count == QuantidadeFolhasEsperada && quantidadeGruposIndexados == QuantidadeGruposEsperada && grupos.Count == QuantidadeGruposEsperada - 1;
+            indexado = folhas.Count == interagiveis.Length && nosIndexados.Count == interagiveis.Length && grupos.Count == quantidadeGrupos - (raizEhGrupo ? 1 : 0);
             if (!indexado)
             {
                 LimparIndice();
+                AvisarIndiceIndisponivel("o índice de estruturas e grupos ficou incompleto");
             }
 
             return indexado;
+        }
+
+        private void AvisarIndiceIndisponivel(string motivo)
+        {
+            if (avisoIndiceEmitido)
+                return;
+            avisoIndiceEmitido = true;
+            Debug.LogWarning("[VR SNC] Expansão global indisponível: " + motivo + ".", this);
         }
 
         public bool ContemFolha(NoInteracaoAnatomica no) => GarantirIndiceAtualizado() && no != null && nosIndexados.Contains(no);

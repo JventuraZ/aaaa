@@ -1,0 +1,681 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c40c1113ed8ca142a3d36fba6bfd571, type: 3}
+  m_Name: DadosEEG
+  m_EditorClassIdentifier: Assembly-CSharp::VRSNC.EEG.DadosEEG
+  arquivoOrigem: sub-hc1_ses-hc_task-rest_eeg.bdf
+  gravadoEm: 2011-01-19 11:22:56
+  frequenciaAmostragem: 512
+  duracaoSegundos: 192
+  referencia: average
+  filtroAnalise: {x: 1, y: 45}
+  montagemEletrodos: colin27_1005
+  frequenciaRede: 60
+  resumoIca: 'ICA: 4 de 30 componentes removidos (ICLabel)'
+  canaisInterpolados:
+  - F3
+  pastaImportada: C:/Users/joao/Documents/protobrain-main/protobrain-main/data/build
+  importadoEmUtc: 2026-10-18T13:24:23.0072096Z
+  canais:
+  - nome: Fp1
+    posicao: {x: -0.0312591, y: 0.027878722, z: 0.11533906}
+    normal: {x: -0.4274684, y: 0.014574056, z: 0.90391284}
+    interpolado: 0
+    topo: {x: -0.15706679, y: 0.53217405}
+    desvioUv: 19.170887
+    regiao: 2
+    brodmann: 10
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 21.3
+  - nome: AF3
+    posicao: {x: -0.036062058, y: 0.05670268, z: 0.110914685}
+    normal: {x: -0.43674645, y: 0.13135049, z: 0.8899436}
+    interpolado: 0
+    topo: {x: -0.15777095, y: 0.44063988}
+    desvioUv: 22.553919
+    regiao: 2
+    brodmann: 10
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 20.6
+  - nome: F7
+    posicao: {x: -0.07204448, y: 0.025804445, z: 0.073197685}
+    normal: {x: -0.8698942, y: 0.072524175, z: 0.48787737}
+    interpolado: 0
+    topo: {x: -0.43621814, y: 0.36616746}
+    desvioUv: 21.623068
+    regiao: 5
+    brodmann: 47
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 20.7
+  - nome: F3
+    posicao: {x: -0.052674104, y: 0.07921579, z: 0.08744174}
+    normal: {x: -0.69077975, y: 0.40061796, z: 0.60193735}
+    interpolado: 1
+    topo: {x: -0.22213559, y: 0.31834066}
+    desvioUv: 16.75277
+    regiao: 2
+    brodmann: 46
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 20.9
+  - nome: FC1
+    posicao: {x: -0.03619207, y: 0.11873561, z: 0.0621903}
+    normal: {x: -0.47152945, y: 0.7452048, z: 0.4715186}
+    interpolado: 0
+    topo: {x: -0.12830341, y: 0.17787366}
+    desvioUv: 11.81555
+    regiao: 1
+    brodmann: 6
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 24.8
+  - nome: FC5
+    posicao: {x: -0.078322545, y: 0.06284059, z: 0.051160306}
+    normal: {x: -0.9246709, y: 0.19297604, z: 0.32824385}
+    interpolado: 0
+    topo: {x: -0.39526147, y: 0.19166607}
+    desvioUv: 15.052785
+    regiao: 10
+    brodmann: 4
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 19.2
+  - nome: T7
+    posicao: {x: -0.08494615, y: 0.03127862, z: 0.01485429}
+    normal: {x: -0.9947405, y: -0.10106094, z: 0.016676202}
+    interpolado: 0
+    topo: {x: -0.5565421, y: 0.0069612376}
+    desvioUv: 13.227006
+    regiao: 19
+    brodmann: 22
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 16.8
+  - nome: C3
+    posicao: {x: -0.06987999, y: 0.106608115, z: 0.024443679}
+    normal: {x: -0.7564374, y: 0.5808931, z: 0.30060878}
+    interpolado: 0
+    topo: {x: -0.269099, y: 0.041728962}
+    desvioUv: 21.669996
+    regiao: 12
+    brodmann: 1
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 19.9
+  - nome: CP1
+    posicao: {x: -0.038500883, y: 0.13564889, z: -0.01136592}
+    normal: {x: -0.42813286, y: 0.8776211, z: -0.21560013}
+    interpolado: 0
+    topo: {x: -0.12283427, y: -0.0831065}
+    desvioUv: 17.353025
+    regiao: 14
+    brodmann: 2
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 25.9
+  - nome: CP5
+    posicao: {x: -0.083842784, y: 0.07349559, z: -0.013698511}
+    normal: {x: -0.977191, y: 0.15226735, z: -0.14802843}
+    interpolado: 0
+    topo: {x: -0.38290784, y: -0.127589}
+    desvioUv: 15.191555
+    regiao: 13
+    brodmann: 40
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 19.4
+  - nome: P7
+    posicao: {x: -0.0776886, y: 0.04125341, z: -0.043351226}
+    normal: {x: -0.93472576, y: -0.005852118, z: -0.35532174}
+    interpolado: 0
+    topo: {x: -0.41383865, y: -0.30963418}
+    desvioUv: 15.75049
+    regiao: 19
+    brodmann: 39
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 20.5
+  - nome: P3
+    posicao: {x: -0.05645606, y: 0.10111999, z: -0.045390707}
+    normal: {x: -0.6424661, y: 0.54874617, z: -0.53489715}
+    interpolado: 0
+    topo: {x: -0.21166687, y: -0.22715205}
+    desvioUv: 11.982996
+    regiao: 15
+    brodmann: 7
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 19.4
+  - nome: Pz
+    posicao: {x: -0.0017303529, y: 0.12609522, z: -0.044751644}
+    normal: {x: 0.028259397, y: 0.78112626, z: -0.6237332}
+    interpolado: 0
+    topo: {x: -0.0015051025, y: -0.20153847}
+    desvioUv: 20.691553
+    regiao: 14
+    brodmann: 7
+    hemisferioEsquerdo: 0
+    linhaMedia: 1
+    distanciaCortexMm: 25.5
+  - nome: PO3
+    posicao: {x: -0.040537357, y: 0.08433467, z: -0.07073484}
+    normal: {x: -0.44207782, y: 0.4435467, z: -0.7796368}
+    interpolado: 0
+    topo: {x: -0.15860774, y: -0.3416835}
+    desvioUv: 13.48416
+    regiao: 15
+    brodmann: 19
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 21.7
+  - nome: O1
+    posicao: {x: -0.033273436, y: 0.055498686, z: -0.08482471}
+    normal: {x: -0.36652753, y: 0.1528811, z: -0.91776085}
+    interpolado: 0
+    topo: {x: -0.14553681, y: -0.44885865}
+    desvioUv: 11.937723
+    regiao: 26
+    brodmann: 18
+    hemisferioEsquerdo: 1
+    linhaMedia: 0
+    distanciaCortexMm: 18.9
+  - nome: Oz
+    posicao: {x: -0.002069109, y: 0.06237443, z: -0.08822498}
+    normal: {x: -0.0015584786, y: 0.28818548, z: -0.95757335}
+    interpolado: 0
+    topo: {x: -0.0034249097, y: -0.4502787}
+    desvioUv: 15.643012
+    regiao: 26
+    brodmann: 17
+    hemisferioEsquerdo: 1
+    linhaMedia: 1
+    distanciaCortexMm: 20.6
+  - nome: O2
+    posicao: {x: 0.02933218, y: 0.05566004, z: -0.08440295}
+    normal: {x: 0.37935382, y: 0.21300389, z: -0.9003999}
+    interpolado: 0
+    topo: {x: 0.14025722, y: -0.449786}
+    desvioUv: 13.442932
+    regiao: 26
+    brodmann: 18
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 18.1
+  - nome: PO4
+    posicao: {x: 0.03654829, y: 0.083323315, z: -0.071609855}
+    normal: {x: 0.4015415, y: 0.3580387, z: -0.84295475}
+    interpolado: 0
+    topo: {x: 0.15388839, y: -0.3473666}
+    desvioUv: 11.03994
+    regiao: 15
+    brodmann: 19
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 22.1
+  - nome: P4
+    posicao: {x: 0.054966528, y: 0.10157076, z: -0.04550049}
+    normal: {x: 0.6459847, y: 0.5120831, z: -0.56610477}
+    interpolado: 0
+    topo: {x: 0.21388584, y: -0.22547702}
+    desvioUv: 12.344475
+    regiao: 15
+    brodmann: 7
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 21.5
+  - nome: P8
+    posicao: {x: 0.07406642, y: 0.041416526, z: -0.043414954}
+    normal: {x: 0.9324771, y: 0.066896334, z: -0.35498077}
+    interpolado: 0
+    topo: {x: 0.411306, y: -0.31231818}
+    desvioUv: 13.0914755
+    regiao: 19
+    brodmann: 39
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 21
+  - nome: CP6
+    posicao: {x: 0.079890236, y: 0.073167175, z: -0.013228833}
+    normal: {x: 0.98023367, y: 0.12748781, z: -0.15129066}
+    interpolado: 0
+    topo: {x: 0.38253266, y: -0.12739639}
+    desvioUv: 18.388079
+    regiao: 13
+    brodmann: 40
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 17.4
+  - nome: CP2
+    posicao: {x: 0.037592236, y: 0.134854, z: -0.01135387}
+    normal: {x: 0.4723031, y: 0.860766, z: -0.18976735}
+    interpolado: 0
+    topo: {x: 0.12879477, y: -0.083340354}
+    desvioUv: 10.173175
+    regiao: 14
+    brodmann: 7
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 26.6
+  - nome: C4
+    posicao: {x: 0.067529045, y: 0.10521897, z: 0.02411545}
+    normal: {x: 0.80526376, y: 0.5587076, z: 0.19848458}
+    interpolado: 0
+    topo: {x: 0.2733466, y: 0.04093917}
+    desvioUv: 12.204479
+    regiao: 12
+    brodmann: 1
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 19.8
+  - nome: T8
+    posicao: {x: 0.08289997, y: 0.030988911, z: 0.015252531}
+    normal: {x: 0.9989059, y: -0.044060312, z: 0.015673658}
+    interpolado: 0
+    topo: {x: 0.5572052, y: 0.009560466}
+    desvioUv: 14.107376
+    regiao: 19
+    brodmann: 22
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 17.7
+  - nome: FC6
+    posicao: {x: 0.07616872, y: 0.062576525, z: 0.05149572}
+    normal: {x: 0.9287979, y: 0.16085184, z: 0.333858}
+    interpolado: 0
+    topo: {x: 0.39618716, y: 0.19275846}
+    desvioUv: 16.800116
+    regiao: 10
+    brodmann: 4
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 19.6
+  - nome: FC2
+    posicao: {x: 0.034110107, y: 0.11837707, z: 0.062810965}
+    normal: {x: 0.4631636, y: 0.7546601, z: 0.46472308}
+    interpolado: 0
+    topo: {x: 0.13011079, y: 0.18009196}
+    desvioUv: 12.203184
+    regiao: 1
+    brodmann: 6
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 25.8
+  - nome: F4
+    posicao: {x: 0.0513056, y: 0.07773809, z: 0.0882372}
+    normal: {x: 0.74426186, y: 0.33732525, z: 0.57644254}
+    interpolado: 0
+    topo: {x: 0.22755902, y: 0.3220055}
+    desvioUv: 10.978694
+    regiao: 2
+    brodmann: 46
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 21.9
+  - nome: F8
+    posicao: {x: 0.07000947, y: 0.025000883, z: 0.07368195}
+    normal: {x: 0.86442494, y: 0.060713004, z: 0.49908262}
+    interpolado: 0
+    topo: {x: 0.4377492, y: 0.36758593}
+    desvioUv: 23.094408
+    regiao: 5
+    brodmann: 47
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 21.1
+  - nome: AF4
+    posicao: {x: 0.03467837, y: 0.057220906, z: 0.110655166}
+    normal: {x: 0.4665694, y: 0.10843069, z: 0.87781304}
+    interpolado: 0
+    topo: {x: 0.16242911, y: 0.4373143}
+    desvioUv: 12.010878
+    regiao: 2
+    brodmann: 10
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 21.1
+  - nome: Fp2
+    posicao: {x: 0.02868326, y: 0.02774902, z: 0.11593703}
+    normal: {x: 0.42012212, y: 0.04261586, z: 0.90646636}
+    interpolado: 0
+    topo: {x: 0.15629326, y: 0.53249043}
+    desvioUv: 12.028913
+    regiao: 2
+    brodmann: 10
+    hemisferioEsquerdo: 0
+    linhaMedia: 0
+    distanciaCortexMm: 21.5
+  - nome: Fz
+    posicao: {x: -0.0012839213, y: 0.10479917, z: 0.09576028}
+    normal: {x: -0.016591059, y: 0.6557997, z: 0.75475264}
+    interpolado: 0
+    topo: {x: 0.00003362795, y: 0.30269086}
+    desvioUv: 9.809639
+    regiao: 1
+    brodmann: 8
+    hemisferioEsquerdo: 0
+    linhaMedia: 1
+    distanciaCortexMm: 25.6
+  - nome: Cz
+    posicao: {x: -0.0011808068, y: 0.14284411, z: 0.028428162}
+    normal: {x: 0.06972247, y: 0.953727, z: 0.2924783}
+    interpolado: 0
+    topo: {x: 0.0003672362, y: 0.047844492}
+    desvioUv: 13.5428915
+    regiao: 10
+    brodmann: 4
+    hemisferioEsquerdo: 1
+    linhaMedia: 1
+    distanciaCortexMm: 29.5
+  regioes:
+  - chave: unknown
+    nome: "Sem r\xF3tulo (parede medial)"
+    lobo: 
+    funcao: 
+  - chave: superiorfrontal
+    nome: Giro frontal superior
+    lobo: Frontal
+    funcao: "Controle executivo; a por\xE7\xE3o posterior cont\xE9m a \xE1rea motora
+      suplementar"
+  - chave: rostralmiddlefrontal
+    nome: "Giro frontal m\xE9dio (rostral)"
+    lobo: Frontal
+    funcao: "Pr\xE9-frontal dorsolateral: mem\xF3ria de trabalho e planejamento"
+  - chave: caudalmiddlefrontal
+    nome: "Giro frontal m\xE9dio (caudal)"
+    lobo: Frontal
+    funcao: "Pr\xE9-motor e campo ocular frontal"
+  - chave: parsopercularis
+    nome: Giro frontal inferior, parte opercular
+    lobo: Frontal
+    funcao: "\xC1rea de Broca no hemisf\xE9rio dominante: produ\xE7\xE3o da fala"
+  - chave: parstriangularis
+    nome: Giro frontal inferior, parte triangular
+    lobo: Frontal
+    funcao: "\xC1rea de Broca no hemisf\xE9rio dominante: linguagem"
+  - chave: parsorbitalis
+    nome: Giro frontal inferior, parte orbital
+    lobo: Frontal
+    funcao: "Sem\xE2ntica da linguagem e controle inibit\xF3rio"
+  - chave: lateralorbitofrontal
+    nome: "C\xF3rtex orbitofrontal lateral"
+    lobo: Frontal
+    funcao: "Tomada de decis\xE3o e avalia\xE7\xE3o de recompensa"
+  - chave: medialorbitofrontal
+    nome: "C\xF3rtex orbitofrontal medial"
+    lobo: Frontal
+    funcao: "Valora\xE7\xE3o emocional e recompensa"
+  - chave: frontalpole
+    nome: Polo frontal
+    lobo: Frontal
+    funcao: "Cogni\xE7\xE3o de alto n\xEDvel e metacogni\xE7\xE3o"
+  - chave: precentral
+    nome: "Giro pr\xE9-central"
+    lobo: Frontal
+    funcao: "C\xF3rtex motor prim\xE1rio"
+  - chave: paracentral
+    nome: "L\xF3bulo paracentral"
+    lobo: Frontal
+    funcao: Motor e sensitivo dos membros inferiores (face medial)
+  - chave: postcentral
+    nome: "Giro p\xF3s-central"
+    lobo: Parietal
+    funcao: "C\xF3rtex somatossensorial prim\xE1rio"
+  - chave: supramarginal
+    nome: Giro supramarginal
+    lobo: Parietal
+    funcao: "Integra\xE7\xE3o somatossensorial; fonologia no hemisf\xE9rio dominante"
+  - chave: superiorparietal
+    nome: "L\xF3bulo parietal superior"
+    lobo: Parietal
+    funcao: "Integra\xE7\xE3o visuoespacial e aten\xE7\xE3o"
+  - chave: inferiorparietal
+    nome: "L\xF3bulo parietal inferior (giro angular)"
+    lobo: Parietal
+    funcao: "Linguagem e sem\xE2ntica; aten\xE7\xE3o espacial"
+  - chave: precuneus
+    nome: "Pr\xE9-c\xFAneo"
+    lobo: Parietal
+    funcao: "Rede de modo padr\xE3o, imag\xE9tica e mem\xF3ria epis\xF3dica"
+  - chave: superiortemporal
+    nome: Giro temporal superior
+    lobo: Temporal
+    funcao: "Audi\xE7\xE3o e compreens\xE3o da fala (Wernicke no hemisf\xE9rio dominante)"
+  - chave: transversetemporal
+    nome: Giro temporal transverso (Heschl)
+    lobo: Temporal
+    funcao: "C\xF3rtex auditivo prim\xE1rio"
+  - chave: middletemporal
+    nome: "Giro temporal m\xE9dio"
+    lobo: Temporal
+    funcao: "Processamento sem\xE2ntico; movimento visual na por\xE7\xE3o posterior"
+  - chave: inferiortemporal
+    nome: Giro temporal inferior
+    lobo: Temporal
+    funcao: Reconhecimento visual de objetos
+  - chave: bankssts
+    nome: Margens do sulco temporal superior
+    lobo: Temporal
+    funcao: "Percep\xE7\xE3o social: voz, faces e movimento biol\xF3gico"
+  - chave: fusiform
+    nome: Giro fusiforme
+    lobo: Temporal
+    funcao: Reconhecimento de faces e de palavras escritas
+  - chave: temporalpole
+    nome: Polo temporal
+    lobo: Temporal
+    funcao: "Mem\xF3ria sem\xE2ntica e cogni\xE7\xE3o social"
+  - chave: entorhinal
+    nome: "C\xF3rtex entorrinal"
+    lobo: Temporal
+    funcao: "Mem\xF3ria: principal via de entrada do hipocampo"
+  - chave: parahippocampal
+    nome: Giro para-hipocampal
+    lobo: Temporal
+    funcao: "Mem\xF3ria e contexto espacial"
+  - chave: lateraloccipital
+    nome: "C\xF3rtex occipital lateral"
+    lobo: Occipital
+    funcao: 'Visual associativo: formas e objetos'
+  - chave: lingual
+    nome: Giro lingual
+    lobo: Occipital
+    funcao: 'Visual: campo superior, cores e letras'
+  - chave: cuneus
+    nome: "C\xFAneo"
+    lobo: Occipital
+    funcao: 'Visual: campo inferior'
+  - chave: pericalcarine
+    nome: "C\xF3rtex pericalcarino"
+    lobo: Occipital
+    funcao: "C\xF3rtex visual prim\xE1rio (V1)"
+  - chave: rostralanteriorcingulate
+    nome: "C\xEDngulo anterior rostral"
+    lobo: "L\xEDmbico (c\xEDngulo)"
+    funcao: "Regula\xE7\xE3o emocional"
+  - chave: caudalanteriorcingulate
+    nome: "C\xEDngulo anterior caudal"
+    lobo: "L\xEDmbico (c\xEDngulo)"
+    funcao: Monitoramento de conflito e de erros
+  - chave: posteriorcingulate
+    nome: "C\xEDngulo posterior"
+    lobo: "L\xEDmbico (c\xEDngulo)"
+    funcao: "Rede de modo padr\xE3o"
+  - chave: isthmuscingulate
+    nome: "Istmo do c\xEDngulo"
+    lobo: "L\xEDmbico (c\xEDngulo)"
+    funcao: "Retrosplenial: mem\xF3ria e navega\xE7\xE3o espacial"
+  - chave: insula
+    nome: "\xCDnsula"
+    lobo: Insular
+    funcao: "Interocep\xE7\xE3o, emo\xE7\xE3o e paladar"
+  areasBrodmann:
+  - numero: 1
+    funcao: "Somatossensorial prim\xE1rio (S1)"
+  - numero: 2
+    funcao: "Somatossensorial prim\xE1rio (S1)"
+  - numero: 3
+    funcao: "Somatossensorial prim\xE1rio (S1)"
+  - numero: 4
+    funcao: "Motor prim\xE1rio (M1)"
+  - numero: 5
+    funcao: Somatossensorial associativo
+  - numero: 6
+    funcao: "Pr\xE9-motor e \xE1rea motora suplementar"
+  - numero: 7
+    funcao: "Parietal superior: integra\xE7\xE3o visuomotora"
+  - numero: 8
+    funcao: Campo ocular frontal
+  - numero: 9
+    funcao: "Pr\xE9-frontal dorsolateral"
+  - numero: 10
+    funcao: "Pr\xE9-frontal anterior (polo frontal)"
+  - numero: 11
+    funcao: Orbitofrontal
+  - numero: 17
+    funcao: "Visual prim\xE1rio (V1)"
+  - numero: 18
+    funcao: "Visual secund\xE1rio (V2)"
+  - numero: 19
+    funcao: Visual associativo
+  - numero: 20
+    funcao: 'Temporal inferior: reconhecimento visual'
+  - numero: 21
+    funcao: "Temporal m\xE9dio: sem\xE2ntica"
+  - numero: 22
+    funcao: Auditivo associativo (Wernicke, posterior, no dominante)
+  - numero: 23
+    funcao: "C\xEDngulo posterior"
+  - numero: 24
+    funcao: "C\xEDngulo anterior"
+  - numero: 25
+    funcao: Subgenual (subcalosa)
+  - numero: 26
+    funcao: Retrosplenial
+  - numero: 27
+    funcao: Piriforme
+  - numero: 28
+    funcao: Entorrinal
+  - numero: 29
+    funcao: Retrosplenial
+  - numero: 30
+    funcao: Retrosplenial
+  - numero: 31
+    funcao: "C\xEDngulo posterior dorsal"
+  - numero: 32
+    funcao: "C\xEDngulo anterior dorsal"
+  - numero: 33
+    funcao: "C\xEDngulo pregenual"
+  - numero: 35
+    funcao: Perirrinal
+  - numero: 36
+    funcao: Para-hipocampal
+  - numero: 37
+    funcao: Occipitotemporal (fusiforme)
+  - numero: 38
+    funcao: Polo temporal
+  - numero: 39
+    funcao: Giro angular
+  - numero: 40
+    funcao: Giro supramarginal
+  - numero: 41
+    funcao: "Auditivo prim\xE1rio (A1)"
+  - numero: 42
+    funcao: "Auditivo secund\xE1rio"
+  - numero: 43
+    funcao: Subcentral (gustativo)
+  - numero: 44
+    funcao: Broca, parte opercular (no dominante)
+  - numero: 45
+    funcao: Broca, parte triangular (no dominante)
+  - numero: 46
+    funcao: "Pr\xE9-frontal dorsolateral"
+  - numero: 47
+    funcao: Frontal inferior, parte orbital
+  bandas:
+  - delta
+  - theta
+  - alpha
+  - beta
+  - gamma
+  rotulosBandas:
+  - Delta
+  - Teta
+  - Alfa
+  - Beta
+  - Gama baixo
+  faixasBandas:
+  - {x: 1, y: 4}
+  - {x: 4, y: 8}
+  - {x: 8, y: 13}
+  - {x: 13, y: 30}
+  - {x: 30, y: 45}
+  quadros: 761
+  passoQuadro: 0.25
+  janelaQuadro: 2
+  inicioQuadros: 1
+  escalas:
+  - modo: absolute
+    rotulo: Absoluta
+    vmin: -2.4529676
+    vmax: 17.201584
+    divergente: 0
+    unidade: dB
+    vminPorBanda:
+    - 0.111795425
+    - -2.4529676
+    - -0.3071711
+    - 5.268024
+    - -0.71976805
+    vmaxPorBanda:
+    - 17.201584
+    - 9.576865
+    - 16.90621
+    - 15.501807
+    - 13.963538
+  - modo: relative
+    rotulo: Relativa
+    vmin: 0
+    vmax: 1
+    divergente: 0
+    unidade: "fra\xE7\xE3o"
+    vminPorBanda: []
+    vmaxPorBanda: []
+  - modo: zscore
+    rotulo: "Varia\xE7\xE3o (z)"
+    vmin: -2
+    vmax: 2
+    divergente: 1
+    unidade: sigma
+    vminPorBanda: []
+    vmaxPorBanda: []
+  cubos:
+  - {fileID: 4900000, guid: c9186c990c7142e46826b41769fc61c3, type: 3}
+  - {fileID: 4900000, guid: a7204504345a07244b5df43380328e51, type: 3}
+  - {fileID: 4900000, guid: a31db44e87ecd6946856f1563c7daea9, type: 3}
+  sinais: {fileID: 4900000, guid: bd48a467a3024bc49a7e07baaa1bcb91, type: 3}
+  amostras: 98304
+  eventos:
+  - tempo: 6.519531
+    codigo: 1
+  escalpo: {fileID: 4300000, guid: a3758ea79019c3443a78aeb30f099c0f, type: 2}
+  pesosEscalpo: {fileID: 4900000, guid: 59226954ae491c643b0138525bdc4028, type: 3}
+  coberturaEscalpo: {fileID: 4900000, guid: 72e6f0355d0e21845a9b5e594e3ab1d1, type: 3}
+  pesosTopo: {fileID: 4900000, guid: 599be7826e59d944d9bd99a99290154e, type: 3}
+  gradeTopo: 67
+  extensaoTopo: 0.5830474
+  raioCabecaTopo: 0.5
+  intradTopo: 0.5830474
+  cortexMinimo: {x: -0.0706472, y: -0.008020681, z: -0.073315986}
+  cortexMaximo: {x: 0.068101265, y: 0.1205307, z: 0.100183845}

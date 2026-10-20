@@ -21,7 +21,7 @@ MonoBehaviour:
     leftHandLocalRotation: {x: 90, y: 0, z: 0}
     palmReferenceAxis: 0
     invertAxisForRightHand: 1
-    requirePalmFacingUser: 0
+    requirePalmFacingUser: 1
     palmFacingUserDegreeAngleThreshold: 54
     requirePalmFacingUp: 0
     palmFacingUpDegreeAngleThreshold: 72

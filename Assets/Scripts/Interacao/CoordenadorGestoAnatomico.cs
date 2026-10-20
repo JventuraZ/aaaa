@@ -31,6 +31,7 @@ namespace VRSNC.Interacao
         [SerializeField]
         [UnityEngine.Serialization.FormerlySerializedAs("selectionManager")]
         private GerenciadorSelecaoHierarquica gerenciadorSelecao;
+        private const float DiametroMarcadorMetros = 0.012f;
         [SerializeField, Min(0f)]
         [UnityEngine.Serialization.FormerlySerializedAs("separationDeadzone")]
         private float separacaoZonaMorta = 0.004f;
@@ -219,8 +220,9 @@ namespace VRSNC.Interacao
             var marcador = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             marcador.name = nomeMarcador;
             marcador.hideFlags = HideFlags.DontSave;
-            marcador.transform.SetParent(transform, false);
-            marcador.transform.localScale = Vector3.one * 0.012f;
+            // Fica na raiz da cena, fora da hierarquia anatômica: sob o SNC, o marcador entraria
+            // nos limites renderizáveis da raiz e deslocaria o centro usado pela vista explodida.
+            marcador.transform.localScale = Vector3.one * DiametroMarcadorMetros;
             var colisor = marcador.GetComponent<Collider>();
             if (colisor != null)
                 Destroy(colisor);
@@ -237,12 +239,6 @@ namespace VRSNC.Interacao
                 primeiroMarcador.transform.position = posicaoPrimeiraPinca;
             if (segundoMarcador != null)
                 segundoMarcador.transform.position = posicaoSegundaPinca;
-            var raizEscala = transform.lossyScale;
-            var localEscala = new Vector3(0.012f / Mathf.Max(0.0001f, Mathf.Abs(raizEscala.x)), 0.012f / Mathf.Max(0.0001f, Mathf.Abs(raizEscala.y)), 0.012f / Mathf.Max(0.0001f, Mathf.Abs(raizEscala.z)));
-            if (primeiroMarcador != null)
-                primeiroMarcador.transform.localScale = localEscala;
-            if (segundoMarcador != null)
-                segundoMarcador.transform.localScale = localEscala;
         }
 
         private static Material CriarMaterialMarcador()

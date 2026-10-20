@@ -35,7 +35,7 @@ namespace VRSNC.Interacao
             selectMode = InteractableSelectMode.Multiple;
         }
 
-        public override bool IsHoverableBy(IXRHoverInteractor interator) => base.IsHoverableBy(interator) && ponte != null && ponte.EhInteratorDeMao(interator) && !ponte.BloqueiaNovaSelecaoAnatomicaPara(interator) && ponte.Candidato(no) != null;
+        public override bool IsHoverableBy(IXRHoverInteractor interator) => base.IsHoverableBy(interator) && ponte != null && ponte.EhInteratorDeMao(interator) && !PonteInteracaoMao.MaoReservada(interator) && !ponte.BloqueiaNovaSelecaoAnatomicaPara(interator) && ponte.Candidato(no) != null;
         public override bool IsSelectableBy(IXRSelectInteractor interator) => base.IsSelectableBy(interator) && ponte != null && ponte.PodeSelecionar(this, interator);
         protected override void OnHoverEntered(HoverEnterEventArgs args)
         {

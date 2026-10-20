@@ -21,6 +21,15 @@ const caminhosScripts = {
   hand: path.join(raizProjeto, 'Assets', 'Scripts', 'Interacao', 'ElementoInteragivelMao.cs.meta'),
 };
 
+// O Unity grava os nomes atuais dos campos ao salvar a cena, enquanto a referência
+// versionada ainda usa os nomes históricos. Os dois lados são reescritos para os nomes
+// declarados hoje nos scripts, conforme seus atributos [FormerlySerializedAs].
+const classesScripts = {
+  binding: { arquivo: path.join(raizProjeto, 'Assets', 'Scripts', 'Anatomia', 'VinculoAnatomico.cs'), classe: 'VinculoAnatomico' },
+  node: { arquivo: path.join(raizProjeto, 'Assets', 'Scripts', 'Interacao', 'NoInteracaoAnatomica.cs'), classe: 'NoInteracaoAnatomica' },
+  hand: { arquivo: path.join(raizProjeto, 'Assets', 'Scripts', 'Interacao', 'ElementoInteragivelMao.cs'), classe: 'ElementoInteragivelMao' },
+};
+
 // Atualizado -> baseline. Whitelist fechada: outros valores serializados continuam estritos.
 const editorClassIdentifierCanonico = Object.freeze({
   'Assembly-CSharp::VRSNC.Anatomia.VinculoAnatomico': 'Assembly-CSharp::VRSNC.Anatomy.BrainAnatomyBinding',
@@ -55,6 +64,62 @@ function extrairGuidMeta(caminhoArquivo, erros) {
     return null;
   }
   return correspondencia[1];
+}
+
+function extrairNomesHistoricos(definicao, erros) {
+  const mapa = new Map();
+  if (!fs.existsSync(definicao.arquivo)) {
+    erros.push(`script anatômico ausente: ${path.relative(raizProjeto, definicao.arquivo)}`);
+    return mapa;
+  }
+  const fonte = normalizarTexto(fs.readFileSync(definicao.arquivo, 'utf8'));
+  const declaracao = fonte.match(new RegExp(`^[ \\t]*public[^\\n]*\\bclass\\s+${definicao.classe}\\b[^\\n]*$`, 'm'));
+  if (!declaracao) {
+    erros.push(`classe ${definicao.classe} não encontrada em ${path.relative(raizProjeto, definicao.arquivo)}`);
+    return mapa;
+  }
+  // Somente o corpo do MonoBehaviour: contratos JSON do mesmo arquivo reutilizam nomes históricos.
+  const resto = fonte.slice(declaracao.index + declaracao[0].length);
+  const fim = resto.search(/\n {4}[^ {}\n]/);
+  const corpo = fim >= 0 ? resto.slice(0, fim) : resto;
+  let pendentes = [];
+  for (const linha of corpo.split('\n')) {
+    for (const historico of linha.matchAll(/FormerlySerializedAs\("([^"]+)"\)/g)) pendentes.push(historico[1]);
+    if (/^\s*(\[|\/\/|$)/.test(linha)) continue;
+    const campo = linha.match(/^\s*(?:private|public|protected|internal)\s+(?!static\b|const\b)[\w.<>,[\]\s?]+?\s+(\w+)\s*(?:=(?!>)[^;]*)?;\s*$/);
+    if (campo) for (const historico of pendentes) mapa.set(historico, campo[1]);
+    pendentes = [];
+  }
+  if (mapa.size === 0) erros.push(`nenhum nome histórico de campo encontrado em ${definicao.classe}`);
+  return mapa;
+}
+
+// Reescreve as chaves de primeiro nível para os nomes atuais e as ordena, de modo que a
+// mesma serialização com nomes antigos ou novos produza exatamente o mesmo texto. Linhas de
+// continuação (quatro ou mais espaços) são unidas à anterior com um espaço, como no YAML: o Unity
+// quebra textos longos em pontos diferentes conforme o comprimento do nome do campo.
+function canonizarBlocoAnatomico(bruto, mapa) {
+  const linhas = normalizarTexto(bruto).split('\n');
+  while (linhas.length > 0 && linhas[linhas.length - 1] === '') linhas.pop();
+  const cabecalho = [];
+  const campos = [];
+  let atual = null;
+  for (const linha of linhas) {
+    const campo = linha.match(/^ {2}([A-Za-z_]\w*):(.*)$/);
+    if (campo) {
+      const chave = mapa.get(campo[1]) ?? campo[1];
+      atual = { chave, linhas: [`  ${chave}:${campo[2]}`] };
+      campos.push(atual);
+    } else if (atual && /^ {4,}\S/.test(linha)) {
+      atual.linhas[atual.linhas.length - 1] += ` ${linha.trim()}`;
+    } else if (atual) {
+      atual.linhas.push(linha);
+    } else {
+      cabecalho.push(linha);
+    }
+  }
+  campos.sort((primeiro, segundo) => (primeiro.chave < segundo.chave ? -1 : primeiro.chave > segundo.chave ? 1 : 0));
+  return [...cabecalho, ...campos.flatMap((entrada) => entrada.linhas)].join('\n');
 }
 
 function analisarBlocosYaml(caminhoArquivo, erros) {
@@ -148,7 +213,7 @@ function serializarObjetoJogo(bloco) {
   };
 }
 
-function analisarCena(caminhoArquivo, erros, guidsScripts) {
+function analisarCena(caminhoArquivo, erros, guidsScripts, mapasCampos) {
   const blocos = analisarBlocosYaml(caminhoArquivo, erros);
   if (!blocos) return null;
   const transformRaiz = blocos.get(idTransformRaiz);
@@ -229,22 +294,27 @@ function analisarCena(caminhoArquivo, erros, guidsScripts) {
     contagensComponentes[tipo] += 1;
   }
 
+  for (const entrada of componentesRelevantes.values()) {
+    if (mapasCampos[entrada.kind]) entrada.canonical = canonizarBlocoAnatomico(entrada.component.raw, mapasCampos[entrada.kind]);
+  }
+
   const vinculacoes = [...componentesRelevantes.values()].filter((entrada) => entrada.kind === 'binding');
   const nos = [...componentesRelevantes.values()].filter((entrada) => entrada.kind === 'node');
   const interagiveisMao = [...componentesRelevantes.values()].filter((entrada) => entrada.kind === 'hand');
-  const grupos = vinculacoes.filter((entrada) => /^\s*isGroup:\s*1\s*$/m.test(entrada.component.raw));
-  const estruturas = vinculacoes.filter((entrada) => /^\s*isGroup:\s*0\s*$/m.test(entrada.component.raw));
+  const chaveGrupo = mapasCampos.binding.get('isGroup') ?? 'isGroup';
+  const grupos = vinculacoes.filter((entrada) => new RegExp(`^\\s*${chaveGrupo}:\\s*1\\s*$`, 'm').test(entrada.canonical));
+  const estruturas = vinculacoes.filter((entrada) => new RegExp(`^\\s*${chaveGrupo}:\\s*0\\s*$`, 'm').test(entrada.canonical));
 
   const blocosAnatomia = new Map();
-  const adicionarEscopo = (id, tipo) => {
+  const adicionarEscopo = (id, tipo, textoCanonico) => {
     const bloco = blocos.get(id);
-    if (bloco) blocosAnatomia.set(id, { kind: tipo, raw: bloco.raw });
+    if (bloco) blocosAnatomia.set(id, { kind: tipo, raw: textoCanonico ?? bloco.raw });
   };
   for (const entrada of descendentes) {
     adicionarEscopo(entrada.transformId, 'Transform');
     if (entrada.gameObjectId !== idObjetoRaiz) adicionarEscopo(entrada.gameObjectId, 'GameObject');
   }
-  for (const entrada of componentesRelevantes.values()) adicionarEscopo(entrada.component.id, entrada.kind);
+  for (const entrada of componentesRelevantes.values()) adicionarEscopo(entrada.component.id, entrada.kind, entrada.canonical);
 
   // Referências de malha e estado de collider são invariantes explícitas.
   // Outros campos de componentes de runtime (controllers, input, painéis etc.)
@@ -354,8 +424,13 @@ function principal() {
     node: extrairGuidMeta(caminhosScripts.node, erros),
     hand: extrairGuidMeta(caminhosScripts.hand, erros),
   };
-  const referencia = analisarCena(caminhos.baseline, erros, guidsScripts);
-  const atual = analisarCena(caminhos.current, erros, guidsScripts);
+  const mapasCampos = {
+    binding: extrairNomesHistoricos(classesScripts.binding, erros),
+    node: extrairNomesHistoricos(classesScripts.node, erros),
+    hand: extrairNomesHistoricos(classesScripts.hand, erros),
+  };
+  const referencia = analisarCena(caminhos.baseline, erros, guidsScripts, mapasCampos);
+  const atual = analisarCena(caminhos.current, erros, guidsScripts, mapasCampos);
   const diferencas = [];
 
   if (referencia && atual) {
@@ -402,7 +477,7 @@ function principal() {
         'todos os descendentes da raiz Transform de Sistema_Nervoso_Central',
         'nomes e estados ativos dos GameObjects descendentes',
         'pai/filhos/posição local/rotação/escala dos Transforms descendentes',
-        'blocos serializados de VinculoAnatomico, NoInteracaoAnatomica e ElementoInteragivelMao',
+        'blocos serializados de VinculoAnatomico, NoInteracaoAnatomica e ElementoInteragivelMao, com nomes históricos de campos ([FormerlySerializedAs]) normalizados para os nomes atuais',
         'referências de malha de MeshFilter/MeshCollider e estado explícito de collider',
         '240 blocos de instâncias de prefab das folhas anatômicas: GUIDs-fonte, serialização completa de m_Modification e caminhos de propriedades',
       ],

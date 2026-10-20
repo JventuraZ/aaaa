@@ -1,9 +1,28 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Inputs;
 using VRSNC.Interface;
 
 namespace VRSNC.Interacao
 {
+    /// <summary>
+    /// Alvo que disputa o raio do controle com a anatomia, como os eletrodos do EEG. Não usa física:
+    /// cada alvo testa o raio sozinho. Ganha quando está mais perto que a estrutura anatômica atingida,
+    /// e então o gatilho confirma o alvo em vez de selecionar a anatomia.
+    /// </summary>
+    public interface IAlvoRaioPrioritario
+    {
+        /// <summary>Distância do primeiro acerto ao longo do raio, até a distância máxima.</summary>
+        bool TentarAcertar(Ray raio, float distanciaMaxima, out float distancia);
+
+        /// <summary>O alvo ganhou (verdadeiro) ou deixou de ganhar (falso) o raio.</summary>
+        void DefinirApontado(bool apontado);
+
+        /// <summary>O gatilho foi apertado com o alvo apontado.</summary>
+        void Confirmar();
+    }
+
     // Nome funcional em português: Controlador de Seleção por Raio
     // Nome técnico do script: ControladorSelecaoPorRaio
     // Função: lança raycast a partir do controle/câmera e informa ao gerenciador qual nó anatômico está em hover.
@@ -58,8 +77,27 @@ namespace VRSNC.Interacao
         // dados anatômicos. Elas evitam trocas de ordem de collider em um frame sem alocar
         // nem alterar os colliders/camadas originais.
         private HistereseCandidatoSelecao histereseCandidato;
+        private static readonly List<IAlvoRaioPrioritario> alvosPrioritarios = new();
+        private IAlvoRaioPrioritario alvoPrioritarioApontado;
+        private Transform origemEstabilizadorEmCache;
+        private XRTransformStabilizer estabilizadorEmCache;
+        public IAlvoRaioPrioritario AlvoPrioritarioApontado => alvoPrioritarioApontado;
         public NoInteracaoAnatomica EmFocoNo => gerenciadorSelecao != null ? gerenciadorSelecao.EmFocoNo : null;
+
+        public static void RegistrarAlvoPrioritario(IAlvoRaioPrioritario alvo)
+        {
+            if (alvo != null && !alvosPrioritarios.Contains(alvo))
+                alvosPrioritarios.Add(alvo);
+        }
+
+        public static void RemoverAlvoPrioritario(IAlvoRaioPrioritario alvo) => alvosPrioritarios.Remove(alvo);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void RedefinirAlvosPrioritarios() => alvosPrioritarios.Clear();
         public Transform OrigemRaioAtiva => ResolverRaioOrigem();
+        private Vector3? pontoAcertoAtual;
+        /// <summary>Ponto onde o raio toca a estrutura em hover neste quadro; nulo quando o raio não aponta nenhuma.</summary>
+        public Vector3? PontoAcertoAtual => pontoAcertoAtual;
         public float DistanciaMaxima => DistanciaMaximaEfetiva;
         private float DistanciaMaximaEfetiva => Mathf.Min(Mathf.Max(0.01f, distanciaMaxima), 6f);
         /// <summary>
@@ -108,10 +146,12 @@ namespace VRSNC.Interacao
         /// </summary>
         public void AtualizarFocoRaio()
         {
+            pontoAcertoAtual = null;
             // O template desativa o controle enquanto a mão rastreada possui a entrada.
             // Não sobrescreve o foco do interactor de mão com uma pose de controle inativa.
-            if (raioOrigem != null && !raioOrigem.gameObject.activeInHierarchy)
+            if (raioOrigem != null && !OrigemRaioDisponivel(raioOrigem))
             {
+                DefinirAlvoPrioritario(null);
                 RedefinirCandidatoEstavel();
                 gerenciadorSelecao?.LimparNoSobFoco(this);
                 return;
@@ -120,6 +160,7 @@ namespace VRSNC.Interacao
             var origem = ResolverRaioOrigem();
             if (origem == null || gerenciadorSelecao == null)
             {
+                DefinirAlvoPrioritario(null);
                 RedefinirCandidatoEstavel();
                 gerenciadorSelecao?.LimparNoSobFoco(this);
                 return;
@@ -135,6 +176,7 @@ namespace VRSNC.Interacao
             // ou arbitragem de EventSystem é introduzido aqui.
             if (origem != null && ZonaProximidadePainelInterface.PontoEstaProximoDoPainel(origem.position))
             {
+                DefinirAlvoPrioritario(null);
                 RedefinirCandidatoEstavel();
                 gerenciadorSelecao?.LimparNoSobFoco(this);
                 return;
@@ -154,7 +196,19 @@ namespace VRSNC.Interacao
 
             var estavelEstavaPresente = false;
             var distanciaEstavelAtual = float.PositiveInfinity;
-            if (!TentarObterAcertoValidoMaisProximo(ObterCandidatoEstavel(), consultaDistancia, out var candidato, out var candidatoDistancia, out estavelEstavaPresente, out distanciaEstavelAtual))
+            var temAnatomia = TentarObterAcertoValidoMaisProximo(ObterCandidatoEstavel(), consultaDistancia, out var candidato, out var candidatoDistancia, out estavelEstavaPresente, out distanciaEstavelAtual);
+            // Um alvo prioritário (ex.: eletrodo) à frente da anatomia ganha o raio e o próximo gatilho.
+            var prioritario = EncontrarAlvoPrioritario(new Ray(origem.position, origem.forward), consultaDistancia, out var distanciaPrioritario);
+            if (prioritario != null && (!temAnatomia || distanciaPrioritario < candidatoDistancia))
+            {
+                RedefinirCandidatoEstavel();
+                gerenciadorSelecao?.LimparNoSobFoco(this);
+                DefinirAlvoPrioritario(prioritario);
+                return;
+            }
+
+            DefinirAlvoPrioritario(null);
+            if (!temAnatomia)
             {
                 RedefinirCandidatoEstavel();
                 gerenciadorSelecao?.LimparNoSobFoco(this);
@@ -165,6 +219,9 @@ namespace VRSNC.Interacao
             if (estavel != null)
             {
                 gerenciadorSelecao.DefinirNoSobFoco(estavel, this);
+                var distanciaEstavel = estavel == candidato ? candidatoDistancia : distanciaEstavelAtual;
+                if (!float.IsInfinity(distanciaEstavel))
+                    pontoAcertoAtual = origem.position + origem.forward * distanciaEstavel;
             }
         }
 
@@ -183,7 +240,7 @@ namespace VRSNC.Interacao
             rastreadoCandidatoPresente = false;
             rastreadoCandidatoDistancia = float.PositiveInfinity;
             var origem = ResolverRaioOrigem();
-            if (origem == null || !origem.gameObject.activeInHierarchy || gerenciadorSelecao == null)
+            if (origem == null || !OrigemRaioDisponivel(origem) || gerenciadorSelecao == null)
             {
                 return false;
             }
@@ -251,6 +308,12 @@ namespace VRSNC.Interacao
         /// </summary>
         public void SelecionarFocoAtual()
         {
+            if (alvoPrioritarioApontado != null)
+            {
+                alvoPrioritarioApontado.Confirmar();
+                return;
+            }
+
             gerenciadorSelecao?.SelecionarNoSobFoco();
         }
 
@@ -259,8 +322,47 @@ namespace VRSNC.Interacao
         /// </summary>
         public void LimparFoco()
         {
+            DefinirAlvoPrioritario(null);
             RedefinirCandidatoEstavel();
             gerenciadorSelecao?.LimparNoSobFoco(this);
+        }
+
+        private static IAlvoRaioPrioritario EncontrarAlvoPrioritario(Ray raio, float distanciaMaxima, out float distancia)
+        {
+            distancia = float.PositiveInfinity;
+            IAlvoRaioPrioritario melhor = null;
+            for (var indice = alvosPrioritarios.Count - 1; indice >= 0; indice--)
+            {
+                var alvo = alvosPrioritarios[indice];
+                if (alvo == null || (alvo is UnityEngine.Object objeto && objeto == null))
+                {
+                    alvosPrioritarios.RemoveAt(indice);
+                    continue;
+                }
+
+                if (alvo.TentarAcertar(raio, distanciaMaxima, out var candidata) && candidata < distancia)
+                {
+                    distancia = candidata;
+                    melhor = alvo;
+                }
+            }
+
+            return melhor;
+        }
+
+        private void DefinirAlvoPrioritario(IAlvoRaioPrioritario alvo)
+        {
+            if (ReferenceEquals(alvoPrioritarioApontado, alvo))
+            {
+                // O mesmo alvo pode ter mudado de item (de um eletrodo para o vizinho): avisa de novo.
+                alvo?.DefinirApontado(true);
+                return;
+            }
+            var anterior = alvoPrioritarioApontado;
+            alvoPrioritarioApontado = alvo;
+            if (anterior != null && !(anterior is UnityEngine.Object antigo && antigo == null))
+                anterior.DefinirApontado(false);
+            alvo?.DefinirApontado(true);
         }
 
         private void OnDisable() => LimparFoco();
@@ -286,6 +388,31 @@ namespace VRSNC.Interacao
         private void RedefinirCandidatoEstavel()
         {
             HistereseCandidato.Redefinir();
+        }
+
+        /// <summary>
+        /// A origem estabilizada do template (ex.: Right Controller Teleport Stabilized Origin) é irmã do
+        /// controle, não filha: continua ativa, parada na última pose, quando a mão rastreada assume. O que
+        /// decide é o grupo do dispositivo que o estabilizador segue (o Right Controller) estar ativo.
+        /// </summary>
+        public bool OrigemRaioDisponivel(Transform origem)
+        {
+            if (origem == null || !origem.gameObject.activeInHierarchy)
+                return false;
+            if (origem != origemEstabilizadorEmCache)
+            {
+                origemEstabilizadorEmCache = origem;
+                estabilizadorEmCache = origem.GetComponentInParent<XRTransformStabilizer>();
+            }
+
+            var alvo = estabilizadorEmCache != null ? estabilizadorEmCache.targetTransform : null;
+            if (alvo == null)
+                return true;
+            var irmaos = estabilizadorEmCache.transform.parent;
+            var grupo = alvo;
+            while (grupo.parent != null && grupo.parent != irmaos)
+                grupo = grupo.parent;
+            return (grupo.parent == irmaos ? grupo : alvo).gameObject.activeInHierarchy;
         }
 
         /// <summary>

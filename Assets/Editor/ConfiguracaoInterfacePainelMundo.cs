@@ -66,6 +66,8 @@ namespace VRSNC.FerramentasEditor
                 var alca = GarantirControle(painel, expandida, seguir);
                 ReestilizarPainel(painel, expandida);
                 GarantirContrasteTextoPrincipal(expandida);
+                // O layout final é sempre o painel compacto com abas; reaplicar esta ferramenta não volta ao anterior.
+                ConfiguracaoPainelCompactoAbas.Aplicar(painel, GameObject.Find("Oraculo_Anatomico_Punho"));
                 EditorSceneManager.MarkSceneDirty(painel.scene);
                 Debug.Log("Painel anatômico espacial principal aplicado: pino compacto no mundo, alça inferior de manipulação, bordas de redimensionamento e recentralização. O pop-up aprovado do Oráculo no pulso não foi alterado.", painel);
             }
@@ -82,7 +84,7 @@ namespace VRSNC.FerramentasEditor
 
         private static ControlePainelMundo GarantirControle(GameObject painel, RectTransform expandida, AcompanhamentoCameraPainelInterface seguir)
         {
-            // 560 x 650 UI units at 0.001 is a compact 0.56 x 0.65 m reading surface.
+            // 560 x 820 unidades de UI na escala 0,001 formam uma superfície de leitura de 0,56 x 0,82 m.
             // XRI remains responsible for bounded user resizing afterwards.
             Undo.RecordObject(painel.transform, "Definir escala inicial confortável do painel no mundo");
             painel.transform.localScale = Vector3.one * 0.001f;
@@ -173,8 +175,8 @@ namespace VRSNC.FerramentasEditor
             if (controles != null)
             {
                 Undo.RecordObject(controles, "Reservar espaço de navegação do painel anatômico");
-                controles.anchorMin = new Vector2(0f, 0.145f);
-                controles.anchorMax = new Vector2(1f, 0.305f);
+                controles.anchorMin = new Vector2(0f, 0.115f);
+                controles.anchorMax = new Vector2(1f, 0.242f);
                 var grade = controles.GetComponent<GridLayoutGroup>();
                 if (grade != null)
                 {
@@ -353,8 +355,8 @@ namespace VRSNC.FerramentasEditor
             }
 
             Undo.RecordObject(controles, "Organizar linha de controles do painel espacial");
-            controles.anchorMin = new Vector2(0.04f, 0.055f);
-            controles.anchorMax = new Vector2(0.96f, 0.13f);
+            controles.anchorMin = new Vector2(0.04f, 0.044f);
+            controles.anchorMax = new Vector2(0.96f, 0.103f);
             controles.offsetMin = Vector2.zero;
             controles.offsetMax = Vector2.zero;
             var seguir = GarantirPainelAcaoBotao(controles, NomeBotaoAcompanhar, "SEGUIR", new Vector2(0.02f, 0.10f), new Vector2(0.31f, 0.90f));
@@ -368,13 +370,14 @@ namespace VRSNC.FerramentasEditor
         private static void DisporConteudoLegivelPainel(RectTransform expandida)
         {
             // Mantém o cartão científico e a rolagem de navegação em faixas verticais separadas.
-            // O painel físico permanece com 560 x 650 unidades de UI; somente sua alocação interna muda.
+            // O painel físico tem 560 x 820 unidades de UI: a altura extra vai para a ficha e para a lista,
+            // que mostra cerca de seis estruturas por vez; cabeçalho e botões mantêm o tamanho anterior.
             var informacao = expandida.Find("InfoPanel") as RectTransform;
             if (informacao != null)
             {
                 Undo.RecordObject(informacao, "Reservar faixa legível de informações anatômicas");
-                informacao.anchorMin = new Vector2(0f, 0.53f);
-                informacao.anchorMax = new Vector2(1f, 0.795f);
+                informacao.anchorMin = new Vector2(0f, 0.551f);
+                informacao.anchorMax = new Vector2(1f, 0.837f);
                 informacao.offsetMin = new Vector2(16f, 0f);
                 informacao.offsetMax = new Vector2(-16f, -4f);
             }
@@ -383,8 +386,8 @@ namespace VRSNC.FerramentasEditor
             if (navegacao != null)
             {
                 Undo.RecordObject(navegacao, "Reservar faixa legível de navegação anatômica");
-                navegacao.anchorMin = new Vector2(0f, 0.31f);
-                navegacao.anchorMax = new Vector2(1f, 0.53f);
+                navegacao.anchorMin = new Vector2(0f, 0.246f);
+                navegacao.anchorMax = new Vector2(1f, 0.551f);
                 navegacao.offsetMin = new Vector2(16f, 0f);
                 navegacao.offsetMax = new Vector2(-16f, -4f);
             }
@@ -573,7 +576,7 @@ namespace VRSNC.FerramentasEditor
             if (cabecalho != null)
             {
                 Undo.RecordObject(cabecalho, "Reservar cabeçalho espaçoso para o painel espacial");
-                cabecalho.anchorMin = new Vector2(0f, 0.79f);
+                cabecalho.anchorMin = new Vector2(0f, 0.837f);
                 cabecalho.anchorMax = Vector2.one;
                 cabecalho.offsetMin = new Vector2(16f, 0f);
                 cabecalho.offsetMax = new Vector2(-16f, -14f);

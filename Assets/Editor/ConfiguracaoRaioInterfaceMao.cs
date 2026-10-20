@@ -16,7 +16,7 @@ public static class ConfiguracaoRaioInterfaceMao
 {
     private const int InterfaceCamada = 5;
     private const int InterfaceCamadaMascara = 1 << InterfaceCamada;
-    [MenuItem("Tools/VR SNC/Mãos/Aplicar raio de UI apenas das mãos")]
+    [MenuItem("Ferramentas/VR SNC/Mãos/Aplicar raio de UI apenas das mãos")]
     public static void AplicarSomenteInterfaceDasMaos()
     {
         var cena = SceneManager.GetActiveScene();
@@ -43,7 +43,7 @@ public static class ConfiguracaoRaioInterfaceMao
         }
     }
 
-    [MenuItem("Tools/VR SNC/Mãos/Validar raio de UI apenas das mãos")]
+    [MenuItem("Ferramentas/VR SNC/Mãos/Validar raio de UI apenas das mãos")]
     public static void ValidarPeloMenu()
     {
         Validar();

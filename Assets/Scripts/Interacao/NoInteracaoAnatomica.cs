@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using VRSNC.Anatomia;
 
@@ -102,6 +103,46 @@ namespace VRSNC.Interacao
         public bool EhNoRaiz => ehRaizNo;
         public InformacaoEstruturaAnatomica EstruturaInformacao => estruturaInformacao;
         public VinculoAnatomico VinculoAnatomico => vinculoAnatomico;
+        /// <summary>
+        /// Nome para leitura na interface: o nome em português do catálogo científico quando existe,
+        /// sem o código de arquivo entre colchetes e com a inicial maiúscula.
+        /// </summary>
+        public string NomeLegivel
+        {
+            get
+            {
+                var nome = OraculoAnatomico.TentarObter(vinculoAnatomico, out var registro) && !string.IsNullOrWhiteSpace(registro.nomePortugues) ? registro.nomePortugues : RemoverCodigoArquivo(NomeExibicao);
+                return CapitalizarInicial(nome);
+            }
+        }
+
+        /// <summary>
+        /// Nome legível com "(parte N)" quando a mesma estrutura está dividida em várias malhas irmãs de mesmo nome.
+        /// A numeração segue o código do arquivo de origem, então é estável entre execuções.
+        /// </summary>
+        public string NomeLegivelComParte
+        {
+            get
+            {
+                var nome = NomeLegivel;
+                if (paiNo == null)
+                    return nome;
+                var partes = new List<NoInteracaoAnatomica>();
+                foreach (var irmao in paiNo.NosFilhos)
+                {
+                    if (irmao != null && string.Equals(irmao.NomeLegivel, nome, StringComparison.OrdinalIgnoreCase))
+                        partes.Add(irmao);
+                }
+
+                if (partes.Count < 2)
+                    return nome;
+                partes.Sort((a, b) => string.CompareOrdinal(ObterCodigoArquivo(a.NomeExibicao), ObterCodigoArquivo(b.NomeExibicao)));
+                return $"{nome} (parte {partes.IndexOf(this) + 1})";
+            }
+        }
+
+        /// <summary>Indica um nó sem filhos e sem nenhuma malha, como um grupo preservado sem modelo 3D.</summary>
+        public bool NaoPossuiModelo3D => nosFilhos.Count == 0 && GetComponentInChildren<Renderer>(true) == null;
         /// <summary>Atribui os dados do próprio objeto; grupos nunca usam a identidade de um descendente.</summary>
         public void VincularAnatomia(InformacaoEstruturaAnatomica estruturaPropria, VinculoAnatomico vinculo)
         {
@@ -200,6 +241,7 @@ namespace VRSNC.Interacao
 
         /// <summary>
         /// Calcula os limites renderizáveis do nó e dos seus filhos para vista explodida e posicionamento.
+        /// Objetos inativos, como auxiliares ocultos, não deslocam o centro anatômico.
         /// </summary>
         public Bounds ObterLimitesRenderizaveis()
         {
@@ -208,7 +250,7 @@ namespace VRSNC.Interacao
             var limites = new Bounds(transform.position, Vector3.zero);
             foreach (var renderizador in renderizadores)
             {
-                if (renderizador == null)
+                if (renderizador == null || !renderizador.gameObject.activeInHierarchy)
                 {
                     continue;
                 }
@@ -280,5 +322,13 @@ namespace VRSNC.Interacao
             var semSublinhados = nomeLimpo.Replace("_", " ");
             return NomesExibicaoAmigaveis.TryGetValue(semSublinhados, out nomeAmigavel) ? nomeAmigavel : semSublinhados;
         }
+
+        private static readonly Regex CodigoArquivoFinal = new(@"\s*\[[A-Z]{2}\d+[A-Z]*\]\s*$");
+        /// <summary>Remove do fim de um nome exibido o código de arquivo do BodyParts3D, como "[FJ7465]".</summary>
+        public static string RemoverCodigoArquivo(string nome) => string.IsNullOrEmpty(nome) ? nome : CodigoArquivoFinal.Replace(nome, string.Empty);
+        /// <summary>Código de arquivo do BodyParts3D no fim de um nome exibido, como "FJ7465"; vazio quando não há.</summary>
+        public static string ObterCodigoArquivo(string nome) => string.IsNullOrEmpty(nome) ? string.Empty : CodigoArquivoFinal.Match(nome).Value.Trim().Trim('[', ']');
+        /// <summary>Coloca a primeira letra em maiúscula sem alterar o restante do texto.</summary>
+        public static string CapitalizarInicial(string texto) => string.IsNullOrEmpty(texto) ? texto : char.ToUpperInvariant(texto[0]) + texto.Substring(1);
     }
 }

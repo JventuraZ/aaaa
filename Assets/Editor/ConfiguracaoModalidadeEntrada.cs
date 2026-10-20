@@ -13,7 +13,7 @@ using VRSNC.Interacao;
 /// <summary>Instalador e leitor exclusivos do Editor, sem salvamento, para diagnósticos independentes de modalidade.</summary>
 public static class ConfiguracaoModalidadeEntrada
 {
-    [MenuItem("Tools/VR SNC/Entrada/Instalar diagnósticos independentes de modalidade")]
+    [MenuItem("Ferramentas/VR SNC/Entrada/Instalar diagnósticos independentes de modalidade")]
     public static void InstalarDiagnosticosIndependentes()
     {
         var modalidade = EncontrarGerenciadorModalidadeCena();
@@ -38,14 +38,14 @@ public static class ConfiguracaoModalidadeEntrada
         }
     }
 
-    [MenuItem("Tools/VR SNC/Entrada/Validar modalidade automática de mão e controle")]
+    [MenuItem("Ferramentas/VR SNC/Entrada/Validar modalidade automática de mão e controle")]
     public static void ValidarPeloMenu()
     {
         ValidarCena();
         Debug.Log("[Modalidade de entrada] APROVADO: um gerenciador XRI nativo, quatro grupos distintos e nenhum relator independente duplicado. " + DescreverMetaConfiguracao());
     }
 
-    [MenuItem("Tools/VR SNC/Entrada/Relatar modalidade automática de mão e controle")]
+    [MenuItem("Ferramentas/VR SNC/Entrada/Relatar modalidade automática de mão e controle")]
     public static void ExibirRelatorioPeloMenu()
     {
         var modalidade = EncontrarGerenciadorModalidadeCena(exigirEditarModo: false);

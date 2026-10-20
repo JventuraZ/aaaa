@@ -49,6 +49,10 @@ namespace VRSNC.FerramentasEditor
             executar("agarre com controlador", () => InvocarTeste(typeof(MenuRegressaoAgarreControlador), "Executar"));
             executar("referências e valores migrados da cena", VerificarCena);
             executar("configuração serializada da interface espacial", () => InvocarTeste(typeof(VerificacoesRegressaoInterfaceEspacial), "ValidarConfiguracao"));
+            executar("EEG do Protobrain: dados, filtros, cores, montagens e ligação aos giros", VerificacoesEEG.Validar);
+            executar("Voltar deixa a concha selecionada", VerificacoesInterfaceNova.ValidarVoltarConcha);
+            executar("gestos das mãos no ar: mover, girar e escalar com as duas mãos", VerificacoesInterfaceNova.ValidarGestosDuasMaos);
+            executar("tema Grafite, Voltar no cabeçalho, legendas dos controles e gestos instalados na cena", VerificacoesInterfaceNova.ValidarTemaNaCena);
             var relatorio = new RelatorioPreparacao
             {
                 aprovado = falhas.Count == 0,

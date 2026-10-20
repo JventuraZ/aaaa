@@ -76,10 +76,55 @@ namespace VRSNC.Interacao
         // até o mesmo pinch efetivamente sair.
         private bool soltarNecessario;
         private float abrirMaoIniciadoEm = -1f;
-        private readonly List<XRHandSubsystem> maoSubsistemas = new();
         private XRHandSubsystem maoSubsistema;
         private static readonly XRHandFingerID[] AbrirMaoDedos = { XRHandFingerID.Thumb, XRHandFingerID.Index, XRHandFingerID.Middle, XRHandFingerID.Ring, XRHandFingerID.Little, };
+        // Mãos cujo raio está ocupado com algo que não é anatomia: um eletrodo do EEG apontado ou um gesto no ar em
+        // curso. Enquanto durar a reserva, a anatomia não recebe foco nem pinça dessa mão. A reserva conta pedidos:
+        // cada sistema libera só o que reservou.
+        private static readonly Dictionary<Transform, int> maosReservadas = new();
+        private static readonly List<Transform> raizesDescartadas = new();
         public bool EstaAgarrando => proprietario != null;
+
+        /// <summary>Reserva (ou libera) o raio de uma mão rastreada para um alvo que não é anatomia.</summary>
+        public static void DefinirMaoReservada(Transform raizMao, bool reservada)
+        {
+            if (raizMao == null)
+                return;
+            maosReservadas.TryGetValue(raizMao, out var pedidos);
+            pedidos += reservada ? 1 : -1;
+            if (pedidos > 0)
+                maosReservadas[raizMao] = pedidos;
+            else
+                maosReservadas.Remove(raizMao);
+        }
+
+        public static bool MaoReservada(IXRInteractor interator) => interator != null && MaoReservada(interator.transform);
+
+        public static bool MaoReservada(Transform transformacao)
+        {
+            if (transformacao == null)
+                return false;
+            var reservada = false;
+            raizesDescartadas.Clear();
+            foreach (var raiz in maosReservadas.Keys)
+            {
+                if (raiz == null)
+                {
+                    raizesDescartadas.Add(raiz);
+                    continue;
+                }
+
+                if (transformacao == raiz || transformacao.IsChildOf(raiz))
+                    reservada = true;
+            }
+
+            foreach (var raiz in raizesDescartadas)
+                maosReservadas.Remove(raiz);
+            return reservada;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void RedefinirMaosReservadas() => maosReservadas.Clear();
         public bool EstaSeparandoComDuasMaos => secundarioResponsavel != null && coordenadorGesto != null && coordenadorGesto.EstaSeparando;
         public void Configurar(GerenciadorSelecaoHierarquica gerenciador, ManipuladorObjetoSelecionado manipuladorAlvo, Transform esquerda, Transform direito)
         {
@@ -113,6 +158,8 @@ namespace VRSNC.Interacao
             // de o pinch realmente terminar; o LateUpdate já cancelou a manipulação.
             if (EhPrimario(fonte, interator) || EhSecundario(fonte, interator))
                 return true;
+            if (MaoReservada(interator))
+                return false;
             if (EhInterfaceInteracaoAtivo(interator))
                 return false;
             if (soltarNecessario)
@@ -545,39 +592,11 @@ namespace VRSNC.Interacao
             posicao = default;
             if (!TentarObterMaoRastreada(interator, out var mao) || interator == null || interator.transform == null)
                 return false;
-            if (!mao.GetJoint(XRHandJointID.ThumbTip).TryGetPose(out var miniatura) || !mao.GetJoint(XRHandJointID.IndexTip).TryGetPose(out var indice))
-                return false;
             var origem = interator.transform.GetComponentInParent<XROrigin>();
-            if (origem == null)
-                return false;
-            posicao = origem.transform.TransformPoint((miniatura.position + indice.position) * 0.5f);
-            return true;
+            return origem != null && PincaMao.TentarObterPonto(mao, origem.transform, out posicao);
         }
 
-        private bool TentarObterSubsistemaMao(out XRHandSubsystem subsistema)
-        {
-            if (maoSubsistema != null && maoSubsistema.running)
-            {
-                subsistema = maoSubsistema;
-                return true;
-            }
-
-            maoSubsistemas.Clear();
-            SubsystemManager.GetSubsystems(maoSubsistemas);
-            for (var indice = 0; indice < maoSubsistemas.Count; indice++)
-            {
-                if (maoSubsistemas[indice] != null && maoSubsistemas[indice].running)
-                {
-                    maoSubsistema = maoSubsistemas[indice];
-                    subsistema = maoSubsistema;
-                    return true;
-                }
-            }
-
-            maoSubsistema = null;
-            subsistema = null;
-            return false;
-        }
+        private bool TentarObterSubsistemaMao(out XRHandSubsystem subsistema) => PincaMao.TentarObterSubsistema(ref maoSubsistema, out subsistema);
 
         private void MarcarMovidoSeNecessario()
         {
